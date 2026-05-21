@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import '../styles.css';
 import '../Stream.css';
 import AIService from '../shared/apiService';
+import { recordUsage } from '../shared/usageStats';
 
 // ========== 工具函数 ==========
 const hasExtensionStorage = () => typeof chrome !== 'undefined' && chrome?.storage?.local;
@@ -30,7 +31,6 @@ const popupZh = {
   speed_fast: '快',
   speed_detail: '详',
   results_title: '结果',
-  quick_hint: 'Ctrl+Enter - 快速解释',
   thinking: '思考中...',
   history_title: '最近记录',
   clear_history: '清空',
@@ -47,7 +47,6 @@ const popupEn = {
   speed_fast: 'Fast',
   speed_detail: 'Detail',
   results_title: 'Results',
-  quick_hint: 'Ctrl+Enter - Quick Explain',
   thinking: 'Thinking...',
   history_title: 'Recent',
   clear_history: 'Clear',
@@ -202,6 +201,7 @@ function Popup() {
         setResult({ type: 'streaming', text: streamedText });
       });
       setResult({ type: 'success', html });
+      recordUsage({ inputText: text, outputText: streamedText });
       upsertCache(text, html, language, speed);
 
       setHistoryList((currentHistory) => {
@@ -246,7 +246,12 @@ function Popup() {
           if (typeof chrome !== 'undefined' && chrome?.runtime?.openOptionsPage) {
             chrome.runtime.openOptionsPage();
           }
-        }}>⚙️</button>
+        }} aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true" className="settings-icon">
+            <path d="M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Z" />
+            <path d="M19.4 13.5c.1-.5.1-1 .1-1.5s0-1-.1-1.5l2-1.5-2-3.5-2.4 1a8.4 8.4 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A8.4 8.4 0 0 0 7 6.5l-2.4-1-2 3.5 2 1.5c-.1.5-.1 1-.1 1.5s0 1 .1 1.5l-2 1.5 2 3.5 2.4-1a8.4 8.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a8.4 8.4 0 0 0 2.6-1.5l2.4 1 2-3.5-2-1.5Zm-7.4 4a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11Z" />
+          </svg>
+        </button>
       </div>
 
       {/* 输入区域 */}
@@ -255,12 +260,6 @@ function Popup() {
         value={inputText}
         disabled={loading}
         onChange={e => setInputText(e.target.value)}
-        onKeyDown={e => {
-          if (e.ctrlKey && e.key === 'Enter') {
-            e.preventDefault();
-            handleSubmit();
-          }
-        }}
         placeholder={t.input_placeholder}
         rows={4}
       />
@@ -308,7 +307,6 @@ function Popup() {
           <div className="result-header">
             <h3 className="result-title">{t.results_title}</h3>
             <div className="result-header-right">
-              <span className="result-hint">{t.quick_hint}</span>
               <button className="result-close-btn" onClick={() => setShowResult(false)}>✕</button>
             </div>
           </div>

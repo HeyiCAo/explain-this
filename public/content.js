@@ -34,6 +34,7 @@ class TextSelector {
 
   showFloatingButton(event) {
     this.removeFloatingButton();
+    const shortcutLabel = /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? 'Cmd+E' : 'Ctrl+E';
 
     this.floatingButton = document.createElement('div');
     this.floatingButton.innerHTML = `
@@ -64,7 +65,7 @@ class TextSelector {
           padding: 2px 8px;
           border-radius: 20px;
           margin-left: 4px;
-        ">Ctrl+E</span>
+        ">${shortcutLabel}</span>
       </div>
     `;
 

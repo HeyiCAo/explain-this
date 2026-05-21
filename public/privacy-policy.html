@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explain This Privacy Policy</title>
+  <style>
+    body {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.65;
+      color: #243044;
+      background: #f5f7fb;
+    }
+    main {
+      background: #ffffff;
+      border: 1px solid #e3e8f2;
+      border-radius: 12px;
+      padding: 28px;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+    h2 {
+      margin-top: 28px;
+      font-size: 18px;
+    }
+    code {
+      background: #eef2f8;
+      border-radius: 4px;
+      padding: 2px 5px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        color: #e6ebf5;
+        background: #1c202e;
+      }
+      main {
+        background: #252a3d;
+        border-color: #3a4055;
+      }
+      code {
+        background: #30384f;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Privacy Policy</h1>
+    <p>Explain This is a Chrome extension that helps explain selected text using AI services.</p>
+
+    <h2>What data is processed</h2>
+    <ul>
+      <li><strong>Selected text:</strong> When you use the explain feature, selected text is sent to the configured AI provider to generate a response.</li>
+      <li><strong>API keys:</strong> Your API keys are stored locally in <code>chrome.storage.local</code> on your device.</li>
+      <li><strong>Usage stats and history:</strong> Simple local records may be stored for display inside the extension.</li>
+    </ul>
+
+    <h2>What is not collected</h2>
+    <ul>
+      <li>We do not collect or store your data on our own servers.</li>
+      <li>We do not sell or share your data with third parties beyond the AI provider you choose.</li>
+    </ul>
+
+    <h2>Where data is stored</h2>
+    <p>All settings and history are stored locally in your browser. The extension does not operate an external backend.</p>
+
+    <h2>Third-party services</h2>
+    <p>The extension sends selected text to the AI provider you choose in settings, such as DeepSeek API or Gemini API. Please review each provider's policy for how they handle data.</p>
+
+    <h2>Contact</h2>
+    <p>If you have questions about this policy, contact the repository owner.</p>
+  </main>
+</body>
+</html>

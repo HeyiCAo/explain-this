@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import '../settingStyle.css'
+import { formatTokenCount, getUsageStats, normalizeUsageStats, remainingTokens } from '../shared/usageStats'
 
 const hasExtensionStorage = () => typeof chrome !== 'undefined' && chrome?.storage?.local;
 const getStorage = (keys) => new Promise(resolve => {
@@ -24,15 +25,19 @@ const settingsZh = {
       deepseek: 'DeepSeek',
       gemini: 'Gemini',
       deepseekGuide: 'DeepSeek API Key 获取指南',
-      deepseekStep1: '1. 访问 DeepSeek 官网注册',
-      deepseekStep2: '2. 进入"API Keys"页面创建新密钥',
+      deepseekStep1: '1. 打开 DeepSeek 开放平台并登录/注册',
+      deepseekStep2: '2. 进入 API Keys 页面创建新密钥',
       deepseekStep3: '3. 将密钥粘贴到下方',
       geminiGuide: 'Gemini API Key 获取指南',
-      geminiStep1: '1. 访问 Google AI Studio 获取密钥',
+      geminiStep1: '1. 打开 Google AI Studio 的 API key 页面',
       geminiStep2: '2. 将密钥粘贴到下方',
       dataNotice: '数据说明',
       dataNoticeContent: '选中的文本将发送给您选择的 AI 服务商以生成解释。详见我们的隐私政策。',
       privacyPolicy: '隐私政策',
+      openDeepseekPlatform: '打开 DeepSeek 平台',
+      openDeepseekDocs: '查看 DeepSeek API 文档',
+      openGeminiKeys: '打开 Gemini API Key 页面',
+      openPrivacyPolicy: '查看隐私政策',
       apiKeyLabel: 'API Key：',
       apiKeyPlaceholder: 'sk-...',
       geminiKeyLabel: 'Gemini API Key：',
@@ -40,12 +45,12 @@ const settingsZh = {
       saveKey: '保存密钥',
       testConnection: '测试连接',
       usageStats: '使用统计',
-      todayUsage: '今日使用时长：',
-      totalUsage: '累计使用时长：',
-      creditRemaining: '剩余额度：',
-      hotkeySettings: '快捷键',
+      todayUsage: '今日使用：',
+      totalUsage: '累计使用：',
+      creditRemaining: '估算剩余额度：',
+      usageStatsNote: '按本地请求记录估算 token；真实账单请以服务商控制台为准。',
+      hotkeySettings: '快捷键与操作方式',
       explainSelected: '解释选中内容：',
-      quickSubmission: '快捷提交：',
       close: '关闭',
       status_enter_key: '请输入API密钥',
       status_invalid_key: '密钥格式无效',
@@ -53,6 +58,8 @@ const settingsZh = {
       status_success: '连接成功！',
       status_invalid_retry: '密钥无效，请重试',
       status_conn_failed: '连接失败，请检查网络',
+      mouseClick: '点击弹窗'
+      mouseClickStep: '选词并点击后，AI搜索会自动开始。 '
     };
 const settingsEn = {
       settings: 'Settings',
@@ -61,15 +68,19 @@ const settingsEn = {
       deepseek: 'DeepSeek',
       gemini: 'Gemini',
       deepseekGuide: 'DeepSeek API Key Required',
-      deepseekStep1: '1. Visit DeepSeek to register',
-      deepseekStep2: '2. Navigate to the "API Keys" page to create new keys',
+      deepseekStep1: '1. Open the DeepSeek platform and sign in or register',
+      deepseekStep2: '2. Go to API Keys and create a new secret key',
       deepseekStep3: '3. Paste the key below',
       geminiGuide: 'Gemini API Key Required',
-      geminiStep1: '1. Visit Google AI Studio to get an API key',
+      geminiStep1: '1. Open the Google AI Studio API key page',
       geminiStep2: '2. Paste the key below',
       dataNotice: 'Data Notice',
       dataNoticeContent: 'Selected text will be sent to your chosen AI provider to generate explanations. See our Privacy Policy.',
       privacyPolicy: 'Privacy Policy',
+      openDeepseekPlatform: 'Open DeepSeek Platform',
+      openDeepseekDocs: 'View DeepSeek API Docs',
+      openGeminiKeys: 'Open Gemini API Key Page',
+      openPrivacyPolicy: 'View Privacy Policy',
       apiKeyLabel: 'API Key:',
       apiKeyPlaceholder: 'sk-...',
       geminiKeyLabel: 'Gemini API Key:',
@@ -77,12 +88,12 @@ const settingsEn = {
       saveKey: 'Save Key',
       testConnection: 'Test Connection',
       usageStats: 'Usage Statistics',
-      todayUsage: 'Time used today:',
-      totalUsage: 'Time used in total:',
-      creditRemaining: 'Credit remaining:',
-      hotkeySettings: 'Hotkeys',
+      todayUsage: 'Today:',
+      totalUsage: 'Total:',
+      creditRemaining: 'Estimated remaining:',
+      usageStatsNote: 'Estimated from local request records. Provider dashboards remain the source of truth.',
+      hotkeySettings: 'Hotkeys and Manuals',
       explainSelected: 'Explain Selected:',
-      quickSubmission: 'Quick Submission:',
       close: 'Close',
       status_enter_key: 'Please enter API key',
       status_invalid_key: 'Invalid API key format',
@@ -90,6 +101,8 @@ const settingsEn = {
       status_success: 'Success!',
       status_invalid_retry: 'Invalid API key. Try again.',
       status_conn_failed: 'Connection failed. Check network.',
+      mouseClick: 'Click'
+      mouseClickStep: 'When clicking on the popup after text selection, search will automatically begin.'
     };
 
 function InfoBox({boxId, title, children, style}) {
@@ -122,16 +135,30 @@ function Section({id, title, children}) {
     );
 }
 
+function isMacPlatform() {
+    return /Mac|iPhone|iPad|iPod/i.test(navigator.platform);
+}
+
+function LinkButton({ href, children }) {
+    return (
+        <a className="guide-link" href={href} target="_blank" rel="noreferrer">
+            {children}
+        </a>
+    );
+}
+
 function SettingsPage() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [provider, setProvider] = useState('deepseek');
     const [lang, setLang] = useState('zh');
     const [status, setStatus] = useState({ message: '', type: '' });
-    const [totalUsage] = useState(0);
-    const [todayUsage] = useState(0);
-    const [remainingQuota] = useState('≈ 1M token')
+    const [usageStats, setUsageStats] = useState(normalizeUsageStats());
     const [apiKey, setApiKey] = useState('');
     const t = lang === 'zh' ? settingsZh : settingsEn;
+    const shortcutModifier = isMacPlatform() ? 'Cmd' : 'Ctrl';
+    const privacyUrl = typeof chrome !== 'undefined' && chrome?.runtime?.getURL
+        ? chrome.runtime.getURL('privacy-policy.html')
+        : '/privacy-policy.html';
 
     useEffect(() => {
       getStorage(["apiKey", "geminiApiKey", "provider", "lang"]).then((result) => {
@@ -140,6 +167,17 @@ function SettingsPage() {
         setApiKey(savedProvider === 'gemini' ? (result.geminiApiKey || '') : (result.apiKey || ''));
         if (result.lang) setLang(result.lang);
       });
+    }, []);
+
+    useEffect(() => {
+        getUsageStats().then(setUsageStats);
+        if (typeof chrome === 'undefined' || !chrome?.storage?.onChanged) return undefined;
+        const handleStorageChange = (changes, areaName) => {
+            if (areaName !== 'local' || !changes.usageStats) return;
+            setUsageStats(normalizeUsageStats(changes.usageStats.newValue));
+        };
+        chrome.storage.onChanged.addListener(handleStorageChange);
+        return () => chrome.storage.onChanged.removeListener(handleStorageChange);
     }, []);
 
     useEffect(() => {
@@ -271,12 +309,19 @@ function SettingsPage() {
                 {t.deepseekStep2}<br />
                 {t.deepseekStep3}<br />
               </p>
+              <div className="guide-links">
+                <LinkButton href="https://platform.deepseek.com/">{t.openDeepseekPlatform}</LinkButton>
+                <LinkButton href="https://api-docs.deepseek.com/">{t.openDeepseekDocs}</LinkButton>
+              </div>
             </InfoBox>
 
             <InfoBox title={t.dataNotice}>
               <p style={{ margin: '8px 0 0 0' }}>
                 {t.dataNoticeContent}
               </p>
+              <div className="guide-links">
+                <LinkButton href={privacyUrl}>{t.openPrivacyPolicy}</LinkButton>
+              </div>
             </InfoBox>
 
             <label style={{ display: provider === "deepseek" ? 'block' : 'none' }}>{t.apiKeyLabel}</label>
@@ -291,6 +336,9 @@ function SettingsPage() {
                 {t.geminiStep1}<br />
                 {t.geminiStep2}<br />
               </p>
+              <div className="guide-links">
+                <LinkButton href="https://aistudio.google.com/app/apikey">{t.openGeminiKeys}</LinkButton>
+              </div>
             </InfoBox>
 
             <label style={{ display: provider === "gemini" ? 'block' : 'none' }}>{t.geminiKeyLabel}</label>
@@ -310,17 +358,24 @@ function SettingsPage() {
 
           <div className="right-column">
             <Section id="usageStats" title={t.usageStats}>
-              <StatItem id="todayUsage" title={t.todayUsage}>{todayUsage}</StatItem>
-              <StatItem id="totalUsage" title={t.totalUsage}>{totalUsage}</StatItem>
-              <StatItem id="creditRemaining" title={t.creditRemaining}>{remainingQuota}</StatItem>
+              <StatItem id="todayUsage" title={t.todayUsage}>
+                {usageStats.todayRequests} / {formatTokenCount(usageStats.todayTokens)}
+              </StatItem>
+              <StatItem id="totalUsage" title={t.totalUsage}>
+                {usageStats.totalRequests} / {formatTokenCount(usageStats.totalTokens)}
+              </StatItem>
+              <StatItem id="creditRemaining" title={t.creditRemaining}>
+                {formatTokenCount(remainingTokens(usageStats))}
+              </StatItem>
+              <p className="stats-note">{t.usageStatsNote}</p>
             </Section>
 
             <Section id="hotkeySettings" title={t.hotkeySettings}>
               <StatItem id="explainSelected" title={t.explainSelected}>
-                <kbd>Ctrl</kbd>+<kbd>E</kbd>
+                <kbd>{shortcutModifier}</kbd>+<kbd>E</kbd>
               </StatItem>
-              <StatItem id="hotkeyQuickValue" title={t.quickSubmission}>
-                <kbd>Ctrl</kbd>+<kbd>Enter</kbd>
+              <StatItem id="explainSelected" title={t.explainSelected}>
+                <kbd>{shortcutModifier}</kbd>+<kbd>E</kbd>
               </StatItem>
             </Section>
           </div>

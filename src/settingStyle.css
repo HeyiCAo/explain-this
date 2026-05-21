@@ -281,6 +281,32 @@ html {
             text-decoration: underline;
         }
 
+        .guide-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .guide-link {
+            display: inline-flex;
+            align-items: center;
+            min-height: 32px;
+            padding: 0 11px;
+            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #cfe0ff;
+            color: #0b63ce;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .guide-link:hover {
+            background: #eef4ff;
+            text-decoration: none;
+        }
+
         .stat-item {
             display: flex;
             justify-content: space-between;
@@ -299,6 +325,13 @@ html {
         .stat-value {
             font-weight: 600;
             color: #333;
+        }
+
+        .stats-note {
+            margin: 10px 0 0;
+            color: #7a8497;
+            font-size: 12px;
+            line-height: 1.45;
         }
 
         .footer {
@@ -401,6 +434,16 @@ html {
         color: #66b2ff; /* 链接在深色背景下需要亮一点 */
     }
 
+    .guide-link {
+        background: #22354a;
+        border-color: #34506d;
+        color: #9dccff;
+    }
+
+    .guide-link:hover {
+        background: #29405a;
+    }
+
     /* 统计列表的分割线和文字 */
     .stat-item {
         border-bottom-color: #333;
@@ -412,6 +455,10 @@ html {
 
     .stat-value {
         color: #f8f9fa;
+    }
+
+    .stats-note {
+        color: #9aa4bb;
     }
 
     /* 状态提示框的深色适配 */

@@ -580,30 +580,42 @@ button:active {
 }
 
 .settings-btn {
-    background: transparent;
-    border: none;
-    font-size: 24px;
+    background: #eef4ff;
+    border: 1px solid #d9e6ff;
+    color: #3563d9;
     cursor: pointer;
-    padding: 5px 10px;
-    border-radius: 50%;
+    padding: 0;
+    border-radius: 10px;
     transition: all 0.3s;
-    width: auto;
+    width: 36px;
+    height: 36px;
     box-shadow: none;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .settings-btn:hover {
-    background: rgba(0,0,0,0.1);
-    transform: rotate(30deg);
+    background: #dfeaff;
+    transform: translateY(-1px);
+}
+.settings-icon {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    display: block;
 }
 @media (prefers-color-scheme: dark) {
     .header-bar {
         border-bottom-color: rgba(255,255,255,0.1);
     }
     .settings-btn:hover {
-        background: rgba(255,255,255,0.1);
+        background: #37415c;
     }
     .settings-btn {
-        color: white;
+        background: #30384f;
+        border-color: #4a5f85;
+        color: #cfe0ff;
     }
 }
 
