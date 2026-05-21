@@ -1,0 +1,91 @@
+/* stream.css */
+.stream-container {
+  position: relative;
+  padding: 16px;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.stream-content {
+  display: inline;
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+
+.stream-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: #667eea;
+  font-weight: bold;
+  animation: none;
+  transition: opacity 0.1s;
+}
+
+/* 加载动画 */
+.stream-loading {
+  text-align: center;
+  padding: 20px;
+}
+
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #667eea;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: 0s; }
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.3);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.stream-loading p {
+  color: #666;
+  font-size: 13px;
+}
+
+/* 错误显示 */
+.stream-error {
+  color: #e53e3e;
+  padding: 12px;
+  background: #fff5f5;
+  border-radius: 8px;
+  border-left: 3px solid #e53e3e;
+}
+
+/* 滚动条样式 */
+.stream-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.stream-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.stream-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.stream-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

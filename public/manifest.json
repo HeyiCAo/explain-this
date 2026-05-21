@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "Explain This",
+  "version": "1.0.0",
+  "description": "Ask AI anything you don't know",
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Opening the explainer"
+  },
+
+  "options_page": "settings.html",
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
+
+  "commands": {
+    "explain-selection": {
+      "suggested_key": {
+        "default": "Ctrl+E",
+        "mac": "Command+E"
+      },
+      "description": "Explain selected text"
+    }
+  },
+
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

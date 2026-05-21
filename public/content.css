@@ -1,0 +1,31 @@
+/* content.css - 增强页面样式 */
+.explain-this-highlight {
+  background-color: rgba(66, 153, 225, 0.3) !important;
+  padding: 1px 3px !important;
+  border-radius: 3px !important;
+  transition: background-color 0.3s ease !important;
+}
+
+.explain-this-highlight:hover {
+  background-color: rgba(66, 153, 225, 0.5) !important;
+}
+
+/* 防止浮动按钮影响页面交互 */
+.explain-this-floating-btn {
+  pointer-events: all !important;
+}
+
+.explain-this-floating-btn * {
+  pointer-events: none !important;
+}
+
+/* 动画效果 */
+@keyframes explain-this-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(66, 153, 225, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(66, 153, 225, 0); }
+}
+
+.explain-this-floating-btn.pulse {
+  animation: explain-this-pulse 2s infinite;
+}
