@@ -29,7 +29,9 @@
 
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "tabs",
+    "windows"
   ],
 
   "host_permissions": [

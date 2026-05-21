@@ -1,12 +1,27 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import '../styles.css';
+import '../Stream.css';
+import AIService from '../shared/apiService';
 
 // ========== 工具函数 ==========
-const getStorage = (keys) => new Promise(resolve => chrome.storage.local.get(keys, resolve));
-const setStorage = (values) => new Promise(resolve => chrome.storage.local.set(values, resolve));
+const hasExtensionStorage = () => typeof chrome !== 'undefined' && chrome?.storage?.local;
+const getStorage = (keys) => new Promise(resolve => {
+  if (!hasExtensionStorage()) {
+    resolve({});
+    return;
+  }
+  chrome.storage.local.get(keys, resolve);
+});
+const setStorage = (values) => new Promise(resolve => {
+  if (!hasExtensionStorage()) {
+    resolve();
+    return;
+  }
+  chrome.storage.local.set(values, resolve);
+});
 
 // ========== 国际化 ==========
-const zh = {
+const popupZh = {
   app_title: 'Explain This',
   app_subtitle: '解释选中的内容',
   input_placeholder: "粘贴或输入你不懂的内容...\n例如：'内卷是什么意思？'\n      'Python中的装饰器怎么理解？'\n      '这个历史典故有什么背景？'",
@@ -20,9 +35,10 @@ const zh = {
   history_title: '最近记录',
   clear_history: '清空',
   empty_input: '请输入要解释的内容',
+  api_error_prefix: '解释失败：',
 };
 
-const en = {
+const popupEn = {
   app_title: 'Explain This',
   app_subtitle: 'Explain highlighted content',
   input_placeholder: "Paste or type what you don't understand...",
@@ -36,6 +52,7 @@ const en = {
   history_title: 'Recent',
   clear_history: 'Clear',
   empty_input: 'Please enter text to explain',
+  api_error_prefix: 'Failed to explain: ',
 };
 
 // ========== 简单内存缓存 ==========
@@ -105,7 +122,16 @@ function ResultError({ message }) {
 
 function ResultSuccess({ html }) {
   return (
-    <div dangerouslySetInnerHTML={{ __html: html }} />
+    <div id="resultContent" className="result-content" dangerouslySetInnerHTML={{ __html: html }} />
+  );
+}
+
+function ResultStreaming({ text }) {
+  return (
+    <div className="stream-container">
+      <div className="stream-content">{text}</div>
+      <span className="stream-cursor">▊</span>
+    </div>
   );
 }
 
@@ -121,15 +147,19 @@ function Popup() {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   const langWrapRef = useRef(null);
+  const aiServiceRef = useRef(new AIService());
   const { getCache, upsertCache } = useSimpleCache();
-  const t = language === 'zh' ? zh : en;
+  const t = language === 'zh' ? popupZh : popupEn;
 
   // 初始化
   useEffect(() => {
-    getStorage(['explainLang', 'explainSpeed', 'history']).then(result => {
+    getStorage(['explainLang', 'explainSpeed', 'history', 'lastSelectedText', 'shouldAutoFill']).then(result => {
       if (result.explainLang) setLanguage(result.explainLang);
       if (result.explainSpeed) setSpeed(result.explainSpeed);
       if (result.history) setHistoryList(result.history);
+      if (result.shouldAutoFill && result.lastSelectedText) {
+        setInputText(result.lastSelectedText);
+      }
     });
   }, []);
 
@@ -146,8 +176,8 @@ function Popup() {
   }, [langMenuOpen]);
 
   // ========== 提交 ==========
-  const handleSubmit = useCallback(async () => {
-    const text = inputText.trim();
+  const explainText = useCallback(async (rawText) => {
+    const text = rawText.trim();
     if (!text) {
       setResult({ type: 'error', message: t.empty_input });
       setShowResult(true);
@@ -163,32 +193,45 @@ function Popup() {
 
     setLoading(true);
     setShowResult(true);
-    setResult({ type: 'loading' });
+    setResult({ type: 'streaming', text: '' });
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      let streamedText = '';
+      const html = await aiServiceRef.current.explainTextStream(text, { language, speed }, (chunk) => {
+        streamedText += chunk;
+        setResult({ type: 'streaming', text: streamedText });
+      });
+      setResult({ type: 'success', html });
+      upsertCache(text, html, language, speed);
 
-    const mockHtml = `
-      <div class="result-content">
-        <h4>📝 您查询的是：</h4>
-        <p class="result-query">${text}</p>
-        <h4>🤖 解释：</h4>
-        <p>这是对 "${text.substring(0, 30)}" 的模拟解释。</p>
-        <p class="result-notice">（本地预览模式，连接真实 API 后会返回实际结果）</p>
-      </div>
-    `;
+      setHistoryList((currentHistory) => {
+        const newHistory = [
+          { key: text, text: text.substring(0, 50), timestamp: new Date().toLocaleString(), language, speed },
+          ...currentHistory.filter(h => h.key !== text)
+        ].slice(0, 10);
+        setStorage({ history: newHistory });
+        return newHistory;
+      });
+    } catch (error) {
+      setResult({ type: 'error', message: `${t.api_error_prefix}${error.message}` });
+    } finally {
+      setLoading(false);
+    }
+  }, [language, speed, getCache, upsertCache, t]);
 
-    setResult({ type: 'success', html: mockHtml });
-    upsertCache(text, mockHtml, language, speed);
-    setLoading(false);
+  useEffect(() => {
+    getStorage(['shouldAutoFill', 'lastSelectedText']).then(result => {
+      if (result.shouldAutoFill && result.lastSelectedText) {
+        setInputText(result.lastSelectedText);
+        explainText(result.lastSelectedText);
+        setStorage({ shouldAutoFill: false, lastSelectedText: '' });
+      }
+    });
+  }, [explainText]);
 
-    const newHistory = [
-      { key: text, text: text.substring(0, 50), timestamp: new Date().toLocaleString(), language, speed },
-      ...historyList.filter(h => h.key !== text)
-    ].slice(0, 10);
-    setHistoryList(newHistory);
-    setStorage({ history: newHistory });
-
-  }, [inputText, language, speed, historyList, getCache, upsertCache, t]);
+  const handleSubmit = useCallback(() => {
+    explainText(inputText);
+  }, [inputText, explainText]);
 
   // ========== 渲染 ==========
   return (
@@ -200,8 +243,8 @@ function Popup() {
           <p className="popup-subtitle">{t.app_subtitle}</p>
         </div>
         <button className="settings-btn" onClick={() => {
-          if (typeof chrome !== 'undefined' && chrome?.tabs) {
-            chrome.tabs.create({ url: 'settings.html' });
+          if (typeof chrome !== 'undefined' && chrome?.runtime?.openOptionsPage) {
+            chrome.runtime.openOptionsPage();
           }
         }}>⚙️</button>
       </div>
@@ -210,6 +253,7 @@ function Popup() {
       <textarea
         className="input-area"
         value={inputText}
+        disabled={loading}
         onChange={e => setInputText(e.target.value)}
         onKeyDown={e => {
           if (e.ctrlKey && e.key === 'Enter') {
@@ -223,8 +267,8 @@ function Popup() {
 
       {/* 操作栏 */}
       <div className="action-bar">
-        <button className="ask-btn" onClick={handleSubmit}>
-          {t.ask_ai}
+        <button className="ask-btn" onClick={handleSubmit} disabled={loading}>
+          {loading ? t.thinking : t.ask_ai}
         </button>
 
         {/* 语言切换 */}
@@ -233,7 +277,7 @@ function Popup() {
             {language.toUpperCase()}
           </button>
           {langMenuOpen && (
-            <div className="lang-menu">
+            <div className="lang-menu open">
               {['zh', 'en'].map(lang => (
                 <div key={lang}
                   className={`lang-option ${language === lang ? 'active' : ''}`}
@@ -270,6 +314,7 @@ function Popup() {
           </div>
           <div>
             {result?.type === 'loading' && <LoadingSpinner text={t.thinking} />}
+            {result?.type === 'streaming' && <ResultStreaming text={result.text || t.thinking} />}
             {result?.type === 'error' && <ResultError message={result.message} />}
             {result?.type === 'success' && <ResultSuccess html={result.html} />}
           </div>

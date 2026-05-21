@@ -128,21 +128,29 @@ class TextSelector {
       console.warn('⚠️ chrome API 不可用，无法发送到扩展');
       return;
     }
+    const openFallbackWindow = () => {
+      try {
+        window.open(chrome.runtime.getURL('popup.html'), 'explain-this-popup', 'width=420,height=640');
+      } catch (error) {
+        console.warn('⚠️ 无法直接打开 popup，请刷新页面后重试', error);
+      }
+    };
     try {
       const canStore = chrome.storage?.local?.set;
-      if (!chrome.runtime?.id) {
-        console.warn('⚠️ 扩展上下文已失效，跳过发送');
-        return;
-      }
       if (canStore) {
         chrome.storage.local.set({
           lastSelectedText: text,
           shouldAutoFill: true
         }, () => {
+          if (chrome.runtime.lastError) {
+            console.warn('⚠️ 存储选区失败，可能需要刷新当前页面', chrome.runtime.lastError);
+            return;
+          }
           console.log('💾 文字已存储，准备打开popup');
           chrome.runtime?.sendMessage({ action: 'openPopup' }, () => {
             if (chrome.runtime.lastError) {
               console.warn('background不可用，尝试直接打开', chrome.runtime.lastError);
+              openFallbackWindow();
             }
           });
         });
@@ -151,11 +159,12 @@ class TextSelector {
         chrome.runtime?.sendMessage({ action: 'storeSelection', text }, () => {
           if (chrome.runtime.lastError) {
             console.warn('background不可用，无法存储选区', chrome.runtime.lastError);
+            openFallbackWindow();
           }
         });
       }
     } catch (error) {
-      console.warn('⚠️ Extension context invalidated', error);
+      console.warn('⚠️ Extension context invalidated，请刷新当前页面后重试', error);
     }
 
     this.removeFloatingButton();

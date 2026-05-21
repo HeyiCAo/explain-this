@@ -1,7 +1,23 @@
 import { useState, useEffect } from 'react'
 import '../settingStyle.css'
 
-const zh = {
+const hasExtensionStorage = () => typeof chrome !== 'undefined' && chrome?.storage?.local;
+const getStorage = (keys) => new Promise(resolve => {
+    if (!hasExtensionStorage()) {
+        resolve({});
+        return;
+    }
+    chrome.storage.local.get(keys, resolve);
+});
+const setStorage = (values) => new Promise(resolve => {
+    if (!hasExtensionStorage()) {
+        resolve();
+        return;
+    }
+    chrome.storage.local.set(values, resolve);
+});
+
+const settingsZh = {
       settings: '设置',
       apiConfig: 'API 配置',
       provider: '服务商：',
@@ -38,7 +54,7 @@ const zh = {
       status_invalid_retry: '密钥无效，请重试',
       status_conn_failed: '连接失败，请检查网络',
     };
-const en = {
+const settingsEn = {
       settings: 'Settings',
       apiConfig: 'API Configurations',
       provider: 'Provider:',
@@ -111,24 +127,47 @@ function SettingsPage() {
     const [provider, setProvider] = useState('deepseek');
     const [lang, setLang] = useState('zh');
     const [status, setStatus] = useState({ message: '', type: '' });
-    const [totalUsage, setTotalUsage] = useState(0);
-    const [todayUsage, setTodayUsage] = useState(0);
-
-    const [remainingQuota, setRemainingQuota] = useState('≈ 1M token')
+    const [totalUsage] = useState(0);
+    const [todayUsage] = useState(0);
+    const [remainingQuota] = useState('≈ 1M token')
     const [apiKey, setApiKey] = useState('');
-    const t = lang === 'zh' ? zh : en;
+    const t = lang === 'zh' ? settingsZh : settingsEn;
 
     useEffect(() => {
-      chrome.storage.local.get(["apiKey", "provider", "lang"], (result) => {
-        if (result.apiKey) setApiKey(result.apiKey);
-        if (result.provider) setProvider(result.provider);
+      getStorage(["apiKey", "geminiApiKey", "provider", "lang"]).then((result) => {
+        const savedProvider = result.provider || 'deepseek';
+        setProvider(savedProvider);
+        setApiKey(savedProvider === 'gemini' ? (result.geminiApiKey || '') : (result.apiKey || ''));
         if (result.lang) setLang(result.lang);
       });
     }, []);
 
     useEffect(() => {
-        chrome.storage.local.set({ lang });
+        setStorage({ lang });
     }, [lang]);
+
+    function handleProviderChange(nextProvider) {
+        setMenuOpen(false);
+        setProvider(nextProvider);
+        setStorage({ provider: nextProvider });
+        getStorage(["apiKey", "geminiApiKey"]).then((result) => {
+            setApiKey(nextProvider === 'gemini' ? (result.geminiApiKey || '') : (result.apiKey || ''));
+        });
+    }
+
+    function handleClose() {
+        if (typeof chrome !== 'undefined' && chrome?.tabs?.getCurrent && chrome?.tabs?.remove) {
+            chrome.tabs.getCurrent((tab) => {
+                if (tab?.id) {
+                    chrome.tabs.remove(tab.id);
+                } else {
+                    window.close();
+                }
+            });
+            return;
+        }
+        window.close();
+    }
 
     function handleSaveKey() {
         if (!apiKey.trim()) {
@@ -143,7 +182,10 @@ function SettingsPage() {
             setStatus({ message: t.status_invalid_key, type: 'error' });
             return;
         }
-        chrome.storage.local.set({ apiKey });
+        const keyPayload = provider === 'gemini'
+            ? { provider, geminiApiKey: apiKey }
+            : { provider, apiKey };
+        setStorage(keyPayload);
         setStatus({ message: t.status_success, type: 'success' });
     }
 
@@ -163,7 +205,7 @@ function SettingsPage() {
                 } else {
                     setStatus({ message: t.status_invalid_key, type: 'error' });
                 }
-            } catch (error) {
+            } catch {
                 setStatus({ message: t.status_invalid_retry, type: 'error' });
             }
         } else if (provider === 'gemini') {
@@ -181,7 +223,7 @@ function SettingsPage() {
                 } else {
                     setStatus({ message: t.status_invalid_key, type: 'error' });
                 }
-            } catch (error) {
+            } catch {
                 setStatus({ message: t.status_invalid_retry, type: 'error' });
             }
         }
@@ -200,12 +242,12 @@ function SettingsPage() {
               <button type="button" onClick={() => setLang('en')}
                   className={lang === 'en' ? 'active' : ''}>EN</button>
             </span>
-            <button className="close-btn">{t.close}</button>
+            <button className="close-btn" onClick={handleClose}>{t.close}</button>
           </div>
         </div>
 
         <div className="section-grid">
-          <Section id="apiConfig" title="API Configurations">
+          <Section id="apiConfig" title={t.apiConfig}>
             <label htmlFor="providerToggle">{t.provider}</label>
             <div className="provider-wrap">
               <button className="provider-toggle"
@@ -216,9 +258,9 @@ function SettingsPage() {
               </button>
               <div className={`provider-menu${menuOpen ? ' open' : ''}`} role="listbox">
                 <div className="provider-item" role="option"
-                  onClick={() => { setMenuOpen(false); setProvider('deepseek'); }}>DeepSeek</div>
+                  onClick={() => handleProviderChange('deepseek')}>DeepSeek</div>
                 <div className="provider-item" role="option"
-                  onClick={() => { setMenuOpen(false); setProvider('gemini'); }}>Gemini</div>
+                  onClick={() => handleProviderChange('gemini')}>Gemini</div>
               </div>
             </div>
 
