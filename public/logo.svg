@@ -1,0 +1,68 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 深灰蓝到暗藏青色渐变背景 -->
+    <linearGradient id="bg-gradient" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- 极光渐变路径，调整坐标以实现更柔和的左下角过渡 -->
+    <linearGradient id="aurora-trail" x1="0" y1="128" x2="85" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0"/>
+      <stop offset="35%" stop-color="#0EA5E9" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/>
+    </linearGradient>
+
+    <!-- 极光发光滤镜 -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+    </filter>
+
+    <!-- 现代轻拟物光影系统 -->
+    <filter id="skeuo-shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.3"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+
+    <!-- 光标微磨砂玻璃填充 -->
+    <linearGradient id="cursor-glass" x1="0" y1="0" x2="24" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="50%" stop-color="#F8FAFC" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#E2E8F0" stop-opacity="0.85"/>
+    </linearGradient>
+
+    <!-- 新增：定义剪裁路径，与底板的圆角矩形完全一致 -->
+    <clipPath id="board-clip">
+      <rect width="128" height="128" rx="28"/>
+    </clipPath>
+  </defs>
+
+  <!-- 渐变背景底板 -->
+  <rect width="128" height="128" rx="28" fill="url(#bg-gradient)"/>
+
+  <!-- 将所有极光元素包裹在剪裁组中，防止发光溢出 -->
+  <g clip-path="url(#board-clip)">
+    <!-- 扩散源头层：在左下角创造一个柔和的、扩散的源头池 -->
+    <rect x="-10" y="90" width="80" height="50" rx="20" fill="url(#aurora-trail)" filter="url(#glow)" opacity="0.15"/>
+
+    <!-- Layer 1 (最底层宽模糊路径) -->
+    <path d="M 0 128 C 30 110, 50 60, 85 42" stroke="url(#aurora-trail)" stroke-width="60" stroke-linecap="round" filter="url(#glow)" opacity="0.2"/>
+
+    <!-- Layer 2 (第二层中等模糊路径) -->
+    <path d="M 5 125 C 33 113, 50 60, 85 42" stroke="url(#aurora-trail)" stroke-width="46" stroke-linecap="round" filter="url(#glow)" opacity="0.35"/>
+
+    <!-- 色彩主体层 -->
+    <path d="M 5 125 C 33 113, 50 60, 85 42" stroke="url(#aurora-trail)" stroke-width="41" stroke-linecap="round"/>
+
+    <!-- 能量高光核心 -->
+    <path d="M 5 125 C 33 113, 50 60, 85 42" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+  </g>
+
+  <!-- 边框层放在极光上层，防止被极光遮挡，取消指针事件 -->
+  <rect x="1" y="1" width="126" height="126" rx="27" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="2" pointer-events="none"/>
+
+  <!-- 现代轻拟物网页光标 -->
+  <g transform="translate(82, 39)" filter="url(#skeuo-shadow)">
+    <path d="M 3 3 L 3 43 L 14 33 L 22 50 L 28 47 L 20 30 L 34 30 Z" fill="url(#cursor-glass)" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/>
+  </g>
+</svg>

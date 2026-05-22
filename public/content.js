@@ -1,4 +1,3 @@
-// content.js - 最终修复版（含悬停膨胀和淡入动画）
 console.log('🎯 Explain This 内容脚本已启动');
 
 class TextSelector {
@@ -118,15 +117,15 @@ class TextSelector {
 
   sendToPopup() {
     if (!this.selectedText) {
-      console.warn('⚠️ 没有选中的文字');
+      console.warn('⚠️ 没有选中的文字 No text is selected');
       return;
     }
-    console.log('📢 sendToPopup 被调用！文字:', this.selectedText.substring(0, 30));
+    console.log('sendToPopup 被调用！文字:', this.selectedText.substring(0, 30));
 
     const text = this.selectedText;
     const hasChrome = typeof chrome !== 'undefined';
     if (!hasChrome) {
-      console.warn('⚠️ chrome API 不可用，无法发送到扩展');
+      console.warn('⚠️ Chrome API 不可用，无法发送到扩展');
       return;
     }
     const openFallbackWindow = () => {

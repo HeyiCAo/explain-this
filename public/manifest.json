@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Explain This",
   "version": "1.0.0",
-  "description": "Ask AI anything you don't know",
+  "description": "Quick search with AI. Ask anything uninterrupted.",
 
   "action": {
     "default_popup": "popup.html",

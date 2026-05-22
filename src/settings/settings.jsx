@@ -58,7 +58,7 @@ const settingsZh = {
       status_success: '连接成功！',
       status_invalid_retry: '密钥无效，请重试',
       status_conn_failed: '连接失败，请检查网络',
-      mouseClick: '点击弹窗'
+      mouseClick: '点击弹窗',
       mouseClickStep: '选词并点击后，AI搜索会自动开始。 '
     };
 const settingsEn = {
@@ -101,7 +101,7 @@ const settingsEn = {
       status_success: 'Success!',
       status_invalid_retry: 'Invalid API key. Try again.',
       status_conn_failed: 'Connection failed. Check network.',
-      mouseClick: 'Click'
+      mouseClick: 'Click',
       mouseClickStep: 'When clicking on the popup after text selection, search will automatically begin.'
     };
 
@@ -374,8 +374,8 @@ function SettingsPage() {
               <StatItem id="explainSelected" title={t.explainSelected}>
                 <kbd>{shortcutModifier}</kbd>+<kbd>E</kbd>
               </StatItem>
-              <StatItem id="explainSelected" title={t.explainSelected}>
-                <kbd>{shortcutModifier}</kbd>+<kbd>E</kbd>
+              <StatItem id="explainSelected" title={t.mouseClick}>
+                <kbd>{t.mouseClickStep}</kbd>
               </StatItem>
             </Section>
           </div>

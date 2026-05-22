@@ -24,7 +24,6 @@ const setStorage = (values) => new Promise(resolve => {
 // ========== 国际化 ==========
 const popupZh = {
   app_title: 'Explain This',
-  app_subtitle: '解释选中的内容',
   input_placeholder: "粘贴或输入你不懂的内容...\n例如：'内卷是什么意思？'\n      'Python中的装饰器怎么理解？'\n      '这个历史典故有什么背景？'",
   ask_ai: '发送',
   speed_label: '速度',
@@ -36,11 +35,11 @@ const popupZh = {
   clear_history: '清空',
   empty_input: '请输入要解释的内容',
   api_error_prefix: '解释失败：',
+  retry: '重试'
 };
 
 const popupEn = {
   app_title: 'Explain This',
-  app_subtitle: 'Explain highlighted content',
   input_placeholder: "Paste or type what you don't understand...",
   ask_ai: 'Ask',
   speed_label: 'Speed',
@@ -52,6 +51,7 @@ const popupEn = {
   clear_history: 'Clear',
   empty_input: 'Please enter text to explain',
   api_error_prefix: 'Failed to explain: ',
+  retry: 'Try Again'
 };
 
 // ========== 简单内存缓存 ==========
@@ -240,7 +240,6 @@ function Popup() {
       <div className="popup-header">
         <div>
           <h1 className="popup-title">{t.app_title}</h1>
-          <p className="popup-subtitle">{t.app_subtitle}</p>
         </div>
         <button className="settings-btn" onClick={() => {
           if (typeof chrome !== 'undefined' && chrome?.runtime?.openOptionsPage) {
