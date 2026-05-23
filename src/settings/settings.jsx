@@ -24,6 +24,7 @@ const settingsZh = {
       provider: '服务商：',
       deepseek: 'DeepSeek',
       gemini: 'Gemini',
+      openai: 'OpenAI',
       deepseekGuide: 'DeepSeek API Key 获取指南',
       deepseekStep1: '1. 打开 DeepSeek 开放平台并登录/注册',
       deepseekStep2: '2. 进入 API Keys 页面创建新密钥',
@@ -31,17 +32,23 @@ const settingsZh = {
       geminiGuide: 'Gemini API Key 获取指南',
       geminiStep1: '1. 打开 Google AI Studio 的 API key 页面',
       geminiStep2: '2. 将密钥粘贴到下方',
+      openaiGuide: 'OpenAI API Key 获取指南',
+      openaiStep1: '1. 打开 OpenAI Platform 的 API keys 页面',
+      openaiStep2: '2. 创建新密钥并粘贴到下方',
       dataNotice: '数据说明',
       dataNoticeContent: '选中的文本将发送给您选择的 AI 服务商以生成解释。详见我们的隐私政策。',
       privacyPolicy: '隐私政策',
       openDeepseekPlatform: '打开 DeepSeek 平台',
       openDeepseekDocs: '查看 DeepSeek API 文档',
       openGeminiKeys: '打开 Gemini API Key 页面',
+      openOpenAIKeys: '打开 OpenAI API Key 页面',
       openPrivacyPolicy: '查看隐私政策',
       apiKeyLabel: 'API Key：',
       apiKeyPlaceholder: 'sk-...',
       geminiKeyLabel: 'Gemini API Key：',
       geminiKeyPlaceholder: 'AIza...',
+      openaiKeyLabel: 'OpenAI API Key：',
+      openaiKeyPlaceholder: 'sk-...',
       saveKey: '保存密钥',
       testConnection: '测试连接',
       usageStats: '使用统计',
@@ -67,6 +74,7 @@ const settingsEn = {
       provider: 'Provider:',
       deepseek: 'DeepSeek',
       gemini: 'Gemini',
+      openai: 'OpenAI',
       deepseekGuide: 'DeepSeek API Key Required',
       deepseekStep1: '1. Open the DeepSeek platform and sign in or register',
       deepseekStep2: '2. Go to API Keys and create a new secret key',
@@ -74,17 +82,23 @@ const settingsEn = {
       geminiGuide: 'Gemini API Key Required',
       geminiStep1: '1. Open the Google AI Studio API key page',
       geminiStep2: '2. Paste the key below',
+      openaiGuide: 'OpenAI API Key Required',
+      openaiStep1: '1. Open the OpenAI Platform API keys page',
+      openaiStep2: '2. Create a new secret key and paste it below',
       dataNotice: 'Data Notice',
       dataNoticeContent: 'Selected text will be sent to your chosen AI provider to generate explanations. See our Privacy Policy.',
       privacyPolicy: 'Privacy Policy',
       openDeepseekPlatform: 'Open DeepSeek Platform',
       openDeepseekDocs: 'View DeepSeek API Docs',
       openGeminiKeys: 'Open Gemini API Key Page',
+      openOpenAIKeys: 'Open OpenAI API Key Page',
       openPrivacyPolicy: 'View Privacy Policy',
       apiKeyLabel: 'API Key:',
       apiKeyPlaceholder: 'sk-...',
       geminiKeyLabel: 'Gemini API Key:',
       geminiKeyPlaceholder: 'AIza...',
+      openaiKeyLabel: 'OpenAI API Key:',
+      openaiKeyPlaceholder: 'sk-...',
       saveKey: 'Save Key',
       testConnection: 'Test Connection',
       usageStats: 'Usage Statistics',
@@ -161,10 +175,16 @@ function SettingsPage() {
         : '/privacy-policy.html';
 
     useEffect(() => {
-      getStorage(["apiKey", "geminiApiKey", "provider", "lang"]).then((result) => {
-        const savedProvider = result.provider || 'deepseek';
+      getStorage(["apiKey", "geminiApiKey", "openaiApiKey", "provider", "lang"]).then((result) => {
+        const savedProvider = result.provider || 'openai';
         setProvider(savedProvider);
-        setApiKey(savedProvider === 'gemini' ? (result.geminiApiKey || '') : (result.apiKey || ''));
+        if (savedProvider === 'gemini') {
+            setApiKey(result.geminiApiKey || '');
+        } else if (savedProvider === 'deepseek') {
+            setApiKey(result.openaiApiKey || '');
+        } else {
+            setApiKey(result.apiKey || '');
+        }
         if (result.lang) setLang(result.lang);
       });
     }, []);
@@ -188,8 +208,14 @@ function SettingsPage() {
         setMenuOpen(false);
         setProvider(nextProvider);
         setStorage({ provider: nextProvider });
-        getStorage(["apiKey", "geminiApiKey"]).then((result) => {
-            setApiKey(nextProvider === 'gemini' ? (result.geminiApiKey || '') : (result.apiKey || ''));
+        getStorage(["apiKey", "geminiApiKey", "openaiApiKey"]).then((result) => {
+            if (nextProvider === 'gemini') {
+                setApiKey(result.geminiApiKey || '');
+            } else if (nextProvider === 'openai') {
+                setApiKey(result.openaiApiKey || '');
+            } else {
+                setApiKey(result.apiKey || '');
+            }
         });
     }
 
@@ -220,9 +246,20 @@ function SettingsPage() {
             setStatus({ message: t.status_invalid_key, type: 'error' });
             return;
         }
-        const keyPayload = provider === 'gemini'
-            ? { provider, geminiApiKey: apiKey }
-            : { provider, apiKey };
+        if (provider === 'openai' && !apiKey.startsWith('sk-')) {
+            setStatus({ message: t.status_invalid_key, type: 'error' });
+            return;
+        }
+        
+        let keyPayload = {};
+        if (provider === 'gemini') {
+            keyPayload = { provider, geminiApiKey: apiKey };
+        } else if (provider === 'openai') {
+            keyPayload = { provider, openaiApiKey: apiKey };
+        } else {
+            keyPayload = { provider, apiKey: apiKey };
+        }
+        
         setStorage(keyPayload);
         setStatus({ message: t.status_success, type: 'success' });
     }
@@ -264,6 +301,24 @@ function SettingsPage() {
             } catch {
                 setStatus({ message: t.status_invalid_retry, type: 'error' });
             }
+        } else if (provider === 'openai') {
+            if (!apiKey.startsWith('sk-')) {
+                setStatus({ message: t.status_enter_key, type: 'error' });
+                return;
+            }
+            setStatus({ message: t.status_testing, type: 'info' });
+            try {
+                const response = await fetch('https://api.openai.com/v1/models', {
+                    headers: { 'Authorization': `Bearer ${apiKey}` }
+                });
+                if (response.ok) {
+                    setStatus({ message: t.status_success, type: 'success' });
+                } else {
+                    setStatus({ message: t.status_invalid_key, type: 'error' });
+                }
+            } catch {
+                setStatus({ message: t.status_invalid_retry, type: 'error' });
+            }
         }
     }
 
@@ -291,7 +346,7 @@ function SettingsPage() {
               <button className="provider-toggle"
                 type="button" aria-haspopup="listbox"
                 onClick={() => setMenuOpen(!menuOpen)}>
-                {provider === 'deepseek' ? "DeepSeek" : "Gemini"}
+                {provider === 'deepseek' ? "DeepSeek" : (provider === 'gemini' ? "Gemini" : "OpenAI")}
                 <span>▾</span>
               </button>
               <div className={`provider-menu${menuOpen ? ' open' : ''}`} role="listbox">
@@ -299,6 +354,8 @@ function SettingsPage() {
                   onClick={() => handleProviderChange('deepseek')}>DeepSeek</div>
                 <div className="provider-item" role="option"
                   onClick={() => handleProviderChange('gemini')}>Gemini</div>
+                <div className="provider-item" role="option"
+                  onClick={() => handleProviderChange('openai')}>OpenAI</div>
               </div>
             </div>
 
@@ -312,6 +369,28 @@ function SettingsPage() {
               <div className="guide-links">
                 <LinkButton href="https://platform.deepseek.com/">{t.openDeepseekPlatform}</LinkButton>
                 <LinkButton href="https://api-docs.deepseek.com/">{t.openDeepseekDocs}</LinkButton>
+              </div>
+            </InfoBox>
+
+            <InfoBox title={t.geminiGuide}
+              style={{ display: provider === "gemini" ? 'block' : 'none' }}>
+              <p style={{ margin: '10px 0 0 0' }}>
+                {t.geminiStep1}<br />
+                {t.geminiStep2}<br />
+              </p>
+              <div className="guide-links">
+                <LinkButton href="https://aistudio.google.com/app/apikey">{t.openGeminiKeys}</LinkButton>
+              </div>
+            </InfoBox>
+
+            <InfoBox title={t.openaiGuide}
+              style={{ display: provider === "openai" ? 'block' : 'none' }}>
+              <p style={{ margin: '10px 0 0 0' }}>
+                {t.openaiStep1}<br />
+                {t.openaiStep2}<br />
+              </p>
+              <div className="guide-links">
+                <LinkButton href="https://platform.openai.com/api-keys">{t.openOpenAIKeys}</LinkButton>
               </div>
             </InfoBox>
 
@@ -330,21 +409,16 @@ function SettingsPage() {
               style={{ display: provider === "deepseek" ? 'block' : 'none' }}
               onChange={(e) => setApiKey(e.target.value)}/>
 
-            <InfoBox title={t.geminiGuide}
-              style={{ display: provider === "gemini" ? 'block' : 'none' }}>
-              <p style={{ margin: '10px 0 0 0' }}>
-                {t.geminiStep1}<br />
-                {t.geminiStep2}<br />
-              </p>
-              <div className="guide-links">
-                <LinkButton href="https://aistudio.google.com/app/apikey">{t.openGeminiKeys}</LinkButton>
-              </div>
-            </InfoBox>
-
             <label style={{ display: provider === "gemini" ? 'block' : 'none' }}>{t.geminiKeyLabel}</label>
             <input type="password" placeholder="AIza..."
               value={apiKey}
               style={{ display: provider === "gemini" ? 'block' : 'none' }}
+              onChange={(e) => setApiKey(e.target.value)}/>
+
+            <label style={{ display: provider === "openai" ? 'block' : 'none' }}>{t.openaiKeyLabel}</label>
+            <input type="password" placeholder="sk-..."
+              value={apiKey}
+              style={{ display: provider === "openai" ? 'block' : 'none' }}
               onChange={(e) => setApiKey(e.target.value)}/>
 
             <div className="button-group">

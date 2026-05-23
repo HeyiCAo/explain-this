@@ -5,18 +5,24 @@ class AIService {
     this.baseURL = 'https://api.deepseek.com/v1';
     this.model = 'deepseek-chat';
 
-    this.geminiBaseURL = 'https://generativelanguage.googleapis.com/v1beta';
-
+    this.geminiBaseURL = 'https://generativelanguage.googleapis.com/v1';
     this.geminiModel = 'gemini-3.5-flash';
+
+    this.openaiBaseURL = 'https://api.openai.com/v1';
+    this.openaiModel = 'gpt-4o-mini';
   }
 
   async loadApiKey() {
     return new Promise((resolve) => {
-      chrome.storage.local.get(['apiKey', 'geminiApiKey', 'provider'], (result) => {
+      chrome.storage.local.get(['apiKey', 'geminiApiKey', 'openaiApiKey', 'provider'], (result) => {
         this.provider = result.provider || 'deepseek';
-        this.apiKey = this.provider === 'gemini'
-          ? (result.geminiApiKey || '')
-          : (result.apiKey || '');
+        if (this.provider === 'gemini') {
+            this.apiKey = result.geminiApiKey || '';
+        } else if (this.provider === 'openai') {
+            this.apiKey = result.openaiApiKey || '';
+        } else {
+            this.apiKey = result.apiKey || '';
+        }
         resolve(this.apiKey);
       });
     });
@@ -38,14 +44,17 @@ class AIService {
       return this.explainWithGemini(prompt, isFast, systemContent);
     }
 
-    const response = await fetch(`${this.baseURL}/chat/completions`, {
+    const apiUrl = this.provider === 'openai' ? this.openaiBaseURL : this.baseURL;
+    const apiModel = this.provider === 'openai' ? this.openaiModel : this.model;
+
+    const response = await fetch(`${apiUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: this.model,
+        model: apiModel,
         messages: [
           { role: 'system', content: systemContent },
           { role: 'user', content: prompt },
@@ -79,14 +88,17 @@ class AIService {
       return this.explainGeminiStream(prompt, isFast, systemContent, onChunk);
     }
 
-    const response = await fetch(`${this.baseURL}/chat/completions`, {
+    const apiUrl = this.provider === 'openai' ? this.openaiBaseURL : this.baseURL;
+    const apiModel = this.provider === 'openai' ? this.openaiModel : this.model;
+
+    const response = await fetch(`${apiUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: this.model,
+        model: apiModel,
         messages: [
           { role: 'system', content: systemContent },
           { role: 'user', content: prompt },
