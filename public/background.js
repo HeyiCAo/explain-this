@@ -1,5 +1,4 @@
 // background.js
-console.log('🤖 Background 已启动');
 
 function openExplainPopup(sendResponse) {
   const popupUrl = chrome.runtime.getURL('popup.html');

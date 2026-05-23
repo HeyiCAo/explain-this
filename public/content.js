@@ -1,5 +1,3 @@
-console.log('🎯 Explain This 内容脚本已启动');
-
 class TextSelector {
   constructor() {
     this.selectedText = '';
@@ -28,7 +26,6 @@ class TextSelector {
     }
     this.selectedText = text;
     this.showFloatingButton(event);
-    console.log('📝 选中文字:', text.substring(0, 30));
   }
 
   showFloatingButton(event) {
@@ -97,12 +94,10 @@ class TextSelector {
     this.floatingButton.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      console.log('🖱️ 浮动按钮点击事件触发');
       this.sendToPopup();
     });
 
     document.body.appendChild(this.floatingButton);
-    console.log('✅ 浮动按钮已添加到页面');
 
     setTimeout(() => this.removeFloatingButton(), 8000);
   }
@@ -111,7 +106,6 @@ class TextSelector {
     if (this.floatingButton && this.floatingButton.parentNode) {
       this.floatingButton.remove();
       this.floatingButton = null;
-      console.log('🗑️ 浮动按钮已移除');
     }
   }
 
@@ -120,7 +114,6 @@ class TextSelector {
       console.warn('⚠️ 没有选中的文字 No text is selected');
       return;
     }
-    console.log('sendToPopup 被调用！文字:', this.selectedText.substring(0, 30));
 
     const text = this.selectedText;
     const hasChrome = typeof chrome !== 'undefined';
@@ -146,7 +139,6 @@ class TextSelector {
             console.warn('⚠️ 存储选区失败，可能需要刷新当前页面', chrome.runtime.lastError);
             return;
           }
-          console.log('💾 文字已存储，准备打开popup');
           chrome.runtime?.sendMessage({ action: 'openPopup' }, () => {
             if (chrome.runtime.lastError) {
               console.warn('background不可用，尝试直接打开', chrome.runtime.lastError);

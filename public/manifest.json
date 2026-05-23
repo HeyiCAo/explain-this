@@ -30,12 +30,12 @@
   "permissions": [
     "activeTab",
     "storage",
-    "tabs",
     "windows"
   ],
 
   "host_permissions": [
-    "<all_urls>"
+    "https://api.deepseek.com/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
 
   "commands": {
