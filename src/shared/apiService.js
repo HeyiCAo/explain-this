@@ -4,8 +4,10 @@ class AIService {
     this.provider = 'deepseek';
     this.baseURL = 'https://api.deepseek.com/v1';
     this.model = 'deepseek-chat';
+
     this.geminiBaseURL = 'https://generativelanguage.googleapis.com/v1beta';
-    this.geminiModel = 'gemini-2.5-flash';
+
+    this.geminiModel = 'gemini-3.5-flash';
   }
 
   async loadApiKey() {
@@ -48,7 +50,7 @@ class AIService {
           { role: 'system', content: systemContent },
           { role: 'user', content: prompt },
         ],
-        max_tokens: isFast ? 180 : 900,
+        max_tokens: isFast ? 800 : 2000,
         temperature: isFast ? 0.1 : 0.4,
       }),
     });
@@ -89,7 +91,7 @@ class AIService {
           { role: 'system', content: systemContent },
           { role: 'user', content: prompt },
         ],
-        max_tokens: isFast ? 180 : 900,
+        max_tokens: isFast ? 800 : 2000,
         temperature: isFast ? 0.1 : 0.4,
         stream: true,
       }),
@@ -118,7 +120,7 @@ class AIService {
         systemInstruction: { parts: [{ text: systemContent }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
-          maxOutputTokens: isFast ? 180 : 900,
+          maxOutputTokens: isFast ? 800 : 2000,
           temperature: isFast ? 0.1 : 0.4,
         },
       }),
@@ -177,11 +179,11 @@ class AIService {
     const languageHint = language === 'en' ? 'Use English for the entire response.' : '请全程使用中文回答。';
     const systemHeader = isFast
       ? (language === 'en'
-        ? 'You are a concise explainer. Reply with 1 line summary and up to 2 bullets. No examples.'
-        : '你是精简解释助手。只要一句话总结 + 不超过2个要点。不要给例子。')
+        ? 'You are a highly concise dictionary assistant. Provide ONLY a single short paragraph (maximum 3 sentences) summarizing the core meaning. Do NOT output any bullet points, lists, examples, or extra details.'
+        : '你是一个极简词典助手。请仅用一段简短的话（最多3句话）总结核心含义。绝不能输出任何列表、要点、例子或多余细节，说完即止。')
       : (language === 'en'
         ? 'You are a professional explainer. Use simple language and include helpful examples.'
-        : '你是一个专业的解释助手。请用简单易懂的语言解释用户输入的内容。');
+        : '你是一个专业的解释助手。请用简单易懂的语言详细解释用户输入的内容。');
     return `${systemHeader}
 ${!isFast ? (language === 'en'
     ? 'Format: first give a one-sentence summary, then explain in bullets, then include a relevant example.'
@@ -200,7 +202,7 @@ ${languageHint}`;
         systemInstruction: { parts: [{ text: systemContent }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
-          maxOutputTokens: isFast ? 180 : 900,
+          maxOutputTokens: isFast ? 800 : 2000,
           temperature: isFast ? 0.1 : 0.4,
         },
       }),

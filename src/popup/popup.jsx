@@ -137,7 +137,7 @@ function ResultStreaming({ text }) {
 // ========== 主组件 ==========
 function Popup() {
   const [inputText, setInputText] = useState('');
-  const [language, setLanguage] = useState('zh');
+  const [language, setLanguage] = useState('en');
   const [speed, setSpeed] = useState('fast');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -152,12 +152,55 @@ function Popup() {
 
   // 初始化
   useEffect(() => {
-    getStorage(['explainLang', 'explainSpeed', 'history', 'lastSelectedText', 'shouldAutoFill']).then(result => {
-      if (result.explainLang) setLanguage(result.explainLang);
-      if (result.explainSpeed) setSpeed(result.explainSpeed);
+    getStorage(['lang', 'explainSpeed', 'history', 'lastSelectedText', 'shouldAutoFill']).then(result => {
+      let currentLang = language;
+      let currentSpeed = speed;
+      
+      if (result.lang) {
+        setLanguage(result.lang);
+        currentLang = result.lang;
+      }
+      if (result.explainSpeed) {
+        setSpeed(result.explainSpeed);
+        currentSpeed = result.explainSpeed;
+      }
       if (result.history) setHistoryList(result.history);
+      
       if (result.shouldAutoFill && result.lastSelectedText) {
-        setInputText(result.lastSelectedText);
+        const text = result.lastSelectedText;
+        setInputText(text);
+        // 直接使用从存储读取的值，避免依赖尚未更新的 state
+        setLoading(true);
+        setShowResult(true);
+        setResult({ type: 'streaming', text: '' });
+        
+        aiServiceRef.current.explainTextStream(text, { language: currentLang, speed: currentSpeed }, (chunk) => {
+          setResult(prev => ({
+            type: 'streaming',
+            text: (prev.text || '') + chunk
+          }));
+        }).then(html => {
+          setResult({ type: 'success', html });
+          // 注意：由于 explainText 也是异步的且依赖于 recordUsage/upsertCache，
+          // 这里我们可能需要稍微重构或直接在这里调用相关逻辑
+          recordUsage({ inputText: text, outputText: html.replace(/<[^>]+>/g, '') });
+          upsertCache(text, html, currentLang, currentSpeed);
+          
+          setHistoryList((currentHistory) => {
+            const newHistory = [
+              { key: text, text: text.substring(0, 50), timestamp: new Date().toLocaleString(), language: currentLang, speed: currentSpeed },
+              ...currentHistory.filter(h => h.key !== text)
+            ].slice(0, 10);
+            setStorage({ history: newHistory });
+            return newHistory;
+          });
+        }).catch(error => {
+          const t_local = currentLang === 'zh' ? popupZh : popupEn;
+          setResult({ type: 'error', message: `${t_local.api_error_prefix}${error.message}` });
+        }).finally(() => {
+          setLoading(false);
+          setStorage({ shouldAutoFill: false, lastSelectedText: '' });
+        });
       }
     });
   }, []);
@@ -219,16 +262,6 @@ function Popup() {
     }
   }, [language, speed, getCache, upsertCache, t]);
 
-  useEffect(() => {
-    getStorage(['shouldAutoFill', 'lastSelectedText']).then(result => {
-      if (result.shouldAutoFill && result.lastSelectedText) {
-        setInputText(result.lastSelectedText);
-        explainText(result.lastSelectedText);
-        setStorage({ shouldAutoFill: false, lastSelectedText: '' });
-      }
-    });
-  }, [explainText]);
-
   const handleSubmit = useCallback(() => {
     explainText(inputText);
   }, [inputText, explainText]);
@@ -279,7 +312,7 @@ function Popup() {
               {['zh', 'en'].map(lang => (
                 <div key={lang}
                   className={`lang-option ${language === lang ? 'active' : ''}`}
-                  onClick={() => { setLanguage(lang); setLangMenuOpen(false); setStorage({ explainLang: lang }); }}
+                  onClick={() => { setLanguage(lang); setLangMenuOpen(false); setStorage({ lang }); }}
                 >{lang.toUpperCase()}</div>
               ))}
             </div>
