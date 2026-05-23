@@ -13,6 +13,7 @@ const getStorage = (keys) => new Promise(resolve => {
   }
   chrome.storage.local.get(keys, resolve);
 });
+
 const setStorage = (values) => new Promise(resolve => {
   if (!hasExtensionStorage()) {
     resolve();
