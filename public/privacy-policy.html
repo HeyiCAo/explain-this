@@ -57,20 +57,27 @@
     <ul>
       <li><strong>Selected text:</strong> When you use the explain feature, selected text is sent to the configured AI provider to generate a response.</li>
       <li><strong>API keys:</strong> Your API keys are stored locally in <code>chrome.storage.local</code> on your device.</li>
-      <li><strong>Usage stats and history:</strong> Simple local records may be stored for display inside the extension.</li>
+      <li><strong>Usage stats and history:</strong> Simple usage counts and a short history of your recent explanations are stored locally for display inside the extension.</li>
     </ul>
 
     <h2>What is not collected</h2>
     <ul>
       <li>We do not collect or store your data on our own servers.</li>
+      <li>We do not track your web browsing history.</li>
       <li>We do not sell or share your data with third parties beyond the AI provider you choose.</li>
     </ul>
 
     <h2>Where data is stored</h2>
-    <p>All settings and history are stored locally in your browser. The extension does not operate an external backend.</p>
+    <p>All settings, keys, and history are stored locally in your browser. The extension does not operate an external backend or database.</p>
 
     <h2>Third-party services</h2>
-    <p>The extension sends selected text to the AI provider you choose in settings, such as DeepSeek API or Gemini API. Please review each provider's policy for how they handle data.</p>
+    <p>The extension sends selected text securely over HTTPS to the AI provider you configure in settings. Supported providers include:</p>
+    <ul>
+      <li>OpenAI API</li>
+      <li>DeepSeek API</li>
+      <li>Gemini API (Google AI Studio)</li>
+    </ul>
+    <p>Please review each provider's policy for how they handle data.</p>
 
     <h2>Contact</h2>
     <p>If you have questions about this policy, contact the repository owner.</p>

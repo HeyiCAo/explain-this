@@ -1,60 +1,19 @@
-<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <!-- 深灰蓝到暗藏青色渐变背景 -->
-    <linearGradient id="bg-gradient" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#1E293B" />
-      <stop offset="50%" stop-color="#020617" />
-    </linearGradient>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none">
+  <circle cx="64" cy="64" r="62" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="2" />
 
-    <!-- 极光渐变路径，调整坐标以实现更柔和的左下角过渡 -->
-    <linearGradient id="aurora-trail" x1="120" y1="128" x2="85" y2="42" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#10B981" stop-opacity="0"/>
-      <stop offset="35%" stop-color="#0EA5E9" stop-opacity="0.8"/>
-      <stop offset="100%" stop-color="#A78BFA" stop-opacity="1"/>
-    </linearGradient>
+  <g transform="rotate(-12 64 64)">
+    <circle cx="48" cy="56" r="34" fill="#374151" />
+    <circle cx="20" cy="92" r="6" fill="#374151" />
+    <circle cx="28" cy="84" r="4" fill="#374151" />
 
-    <!-- 极光发光滤镜 -->
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
-      <feGaussianBlur stdDeviation="7" result="blur"/>
-    </filter>
-
-    <!-- 现代轻拟物光影系统 -->
-    <filter id="skeuo-shadow" x="-40%" y="-40%" width="180%" height="180%">
-      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.3"/>
-      <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.4"/>
-    </filter>
-
-    <!-- 光标微磨砂玻璃填充 -->
-    <linearGradient id="cursor-glass" x1="0" y1="0" x2="24" y2="34" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1"/>
-      <stop offset="50%" stop-color="#F8FAFC" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#E2E8F0" stop-opacity="0.85"/>
-    </linearGradient>
-
-    <!-- 新增：定义剪裁路径，与底板的圆角矩形完全一致 -->
-    <clipPath id="board-clip">
-      <rect width="128" height="128" rx="28"/>
-    </clipPath>
-  </defs>
-
-  <!-- 渐变背景底板 -->
-  <rect width="128" height="128" rx="28" fill="url(#bg-gradient)"/>
-
-  <g clip-path="url(#board-clip)">
-    <rect x="-10" y="90" width="80" height="50" rx="20" fill="url(#aurora-trail)" filter="url(#glow)" opacity="0.15"/>
-
-    <path d="M 0 128 C 30 110, 50 60, 85 42" stroke="url(#aurora-trail)" stroke-width="60" stroke-linecap="round" filter="url(#glow)" opacity="0.2"/>
-
-    <path d="M 5 125 C 33 113, 50 60, 85 42" stroke="url(#aurora-trail)" stroke-width="46" stroke-linecap="round" filter="url(#glow)" opacity="0.35"/>
-
-    <path d="M 5 125 C 33 113, 50 60, 85 42" stroke="url(#aurora-trail)" stroke-width="41" stroke-linecap="round"/>
-
-    <path d="M 5 125 C 33 113, 50 60, 85 42" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+    <circle cx="38" cy="48" r="5" fill="#FFFFFF" />
+    <circle cx="58" cy="48" r="5" fill="#FFFFFF" />
+    <rect x="38" y="64" width="20" height="4" rx="2" fill="#FFFFFF" />
   </g>
 
-  <rect x="1" y="1" width="126" height="126" rx="27" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="2" pointer-events="none"/>
-
-  <g transform="translate(82, 39)" filter="url(#skeuo-shadow)">
-    <path d="M 3 3 L 3 43 L 14 33 L 22 50 L 28 47 L 20 30 L 34 30 Z" fill="url(#cursor-glass)" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/>
+  <g fill="#374151" opacity="0.45">
+    <rect x="82" y="38" width="26" height="7" rx="3.5" />
+    <rect x="76" y="56" width="38" height="7" rx="3.5" />
+    <rect x="82" y="74" width="20" height="7" rx="3.5" />
   </g>
 </svg>

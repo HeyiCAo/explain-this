@@ -249,7 +249,7 @@ function SettingsPage() {
             return;
         }
         
-        let keyPayload = {};
+        let keyPayload;
         if (provider === 'gemini') {
             keyPayload = { provider, geminiApiKey: apiKey };
         } else if (provider === 'openai') {
