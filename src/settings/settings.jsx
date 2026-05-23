@@ -163,16 +163,14 @@ function LinkButton({ href, children }) {
 
 function SettingsPage() {
     const [menuOpen, setMenuOpen] = useState(false);
-    const [provider, setProvider] = useState('deepseek');
+    const [provider, setProvider] = useState('openai');
     const [lang, setLang] = useState('zh');
     const [status, setStatus] = useState({ message: '', type: '' });
     const [usageStats, setUsageStats] = useState(normalizeUsageStats());
     const [apiKey, setApiKey] = useState('');
     const t = lang === 'zh' ? settingsZh : settingsEn;
     const shortcutModifier = isMacPlatform() ? 'Cmd' : 'Ctrl';
-    const privacyUrl = typeof chrome !== 'undefined' && chrome?.runtime?.getURL
-        ? chrome.runtime.getURL('privacy-policy.html')
-        : '/privacy-policy.html';
+    const privacyUrl = 'https://github.com/HeyiCAo/ExplainThis/blob/main/privacy-policy.md';
 
     useEffect(() => {
       getStorage(["apiKey", "geminiApiKey", "openaiApiKey", "provider", "lang"]).then((result) => {
@@ -180,7 +178,7 @@ function SettingsPage() {
         setProvider(savedProvider);
         if (savedProvider === 'gemini') {
             setApiKey(result.geminiApiKey || '');
-        } else if (savedProvider === 'deepseek') {
+        } else if (savedProvider === 'openai') {
             setApiKey(result.openaiApiKey || '');
         } else {
             setApiKey(result.apiKey || '');

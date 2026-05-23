@@ -1,7 +1,7 @@
 class AIService {
   constructor() {
     this.apiKey = null;
-    this.provider = 'deepseek';
+    this.provider = 'openai';
     this.baseURL = 'https://api.deepseek.com/v1';
     this.model = 'deepseek-chat';
 
@@ -15,7 +15,7 @@ class AIService {
   async loadApiKey() {
     return new Promise((resolve) => {
       chrome.storage.local.get(['apiKey', 'geminiApiKey', 'openaiApiKey', 'provider'], (result) => {
-        this.provider = result.provider || 'deepseek';
+        this.provider = result.provider || 'openai';
         if (this.provider === 'gemini') {
             this.apiKey = result.geminiApiKey || '';
         } else if (this.provider === 'openai') {

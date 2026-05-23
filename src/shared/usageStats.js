@@ -8,7 +8,19 @@ export function todayKey(date = new Date()) {
 export function estimateTokens(text) {
   const normalized = String(text || '').trim();
   if (!normalized) return 0;
-  return Math.max(1, Math.ceil(normalized.length / 4));
+
+  // 匹配中日韩字符
+  const cjkRegex = /[\u4e00-\u9fa5\u3040-\u30ff\uac00-\uafff\u3400-\u4dbf]/g;
+  const cjkMatch = normalized.match(cjkRegex);
+  const cjkCount = cjkMatch ? cjkMatch.length : 0;
+
+  // 其他字符（如英文、数字、符号）
+  const restLength = normalized.length - cjkCount;
+  
+  // 估算：中日韩字符通常占 1-1.5 个 token（此处取1.2），其他字符按 4 个字符 1 个 token 估算
+  const estimated = Math.ceil(cjkCount * 1.2 + restLength / 4);
+  
+  return Math.max(1, estimated);
 }
 
 export function emptyUsageStats() {
