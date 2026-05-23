@@ -58,6 +58,19 @@ const popupEn = {
 function useSimpleCache() {
   const cacheRef = useRef({});
 
+  useEffect(() => {
+    getStorage(['explainCache']).then(result => {
+      const list = result.explainCache || [];
+      const newCache = { ...cacheRef.current };
+      list.forEach(item => {
+        if (item && item.key) {
+          newCache[item.key] = item;
+        }
+      });
+      cacheRef.current = newCache;
+    });
+  }, []);
+
   const normalizeKey = (text, language, speed) => {
     const base = text.trim();
     if (!language) return base;
@@ -218,7 +231,7 @@ function Popup() {
   }, [langMenuOpen]);
 
   // ========== 提交 ==========
-  const explainText = useCallback(async (rawText) => {
+  const explainText = useCallback(async (rawText, overrideLang, overrideSpeed) => {
     const text = rawText.trim();
     if (!text) {
       setResult({ type: 'error', message: t.empty_input });
@@ -226,7 +239,10 @@ function Popup() {
       return;
     }
 
-    const cached = getCache(text, language, speed);
+    const currentLang = overrideLang || language;
+    const currentSpeed = overrideSpeed || speed;
+
+    const cached = getCache(text, currentLang, currentSpeed);
     if (cached?.explanation) {
       setResult({ type: 'success', html: cached.explanation });
       setShowResult(true);
@@ -239,17 +255,17 @@ function Popup() {
 
     try {
       let streamedText = '';
-      const html = await aiServiceRef.current.explainTextStream(text, { language, speed }, (chunk) => {
+      const html = await aiServiceRef.current.explainTextStream(text, { language: currentLang, speed: currentSpeed }, (chunk) => {
         streamedText += chunk;
         setResult({ type: 'streaming', text: streamedText });
       });
       setResult({ type: 'success', html });
       recordUsage({ inputText: text, outputText: streamedText });
-      upsertCache(text, html, language, speed);
+      upsertCache(text, html, currentLang, currentSpeed);
 
       setHistoryList((currentHistory) => {
         const newHistory = [
-          { key: text, text: text.substring(0, 50), timestamp: new Date().toLocaleString(), language, speed },
+          { key: text, text: text.substring(0, 50), timestamp: new Date().toLocaleString(), language: currentLang, speed: currentSpeed },
           ...currentHistory.filter(h => h.key !== text)
         ].slice(0, 10);
         setStorage({ history: newHistory });
@@ -365,6 +381,7 @@ function Popup() {
               setInputText(item.text);
               setLanguage(item.language || 'zh');
               setSpeed(item.speed || 'fast');
+              explainText(item.text, item.language || 'zh', item.speed || 'fast');
             }} />
           ))}
         </div>
