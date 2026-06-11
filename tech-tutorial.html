@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>探索 ExplainThis：从零构建一个现代 AI Chrome 插件</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --heading-color: #0f172a;
+            --primary-color: #3b82f6;
+            --card-bg: #ffffff;
+            --code-bg: #1e1e1e;
+            --code-text: #d4d4d4;
+            --border-color: #e2e8f0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f172a;
+                --text-color: #cbd5e1;
+                --heading-color: #f8fafc;
+                --primary-color: #60a5fa;
+                --card-bg: #1e293b;
+                --code-bg: #000000;
+                --border-color: #334155;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.7;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            color: var(--heading-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        section {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border-color);
+        }
+
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        h3 {
+            color: var(--heading-color);
+            margin-top: 25px;
+        }
+
+        p, li {
+            font-size: 1.05rem;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .highlight {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: "Fira Code", Consolas, Monaco, monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: "Fira Code", Consolas, Monaco, monospace;
+            background-color: rgba(0,0,0,0.05);
+            padding: 2px 4px;
+            border-radius: 4px;
+            color: #ef4444;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            code {
+                background-color: rgba(255,255,255,0.1);
+                color: #fca5a5;
+            }
+        }
+
+        .note-box {
+            background-color: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .note-box strong {
+            color: #d97706;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>探索 ExplainThis</h1>
+        <div class="subtitle">给计算机新生的漫游指南：从零解剖一个现代 AI Chrome 插件</div>
+    </header>
+
+    <section>
+        <h2>引言：你正在看什么？</h2>
+        <p>欢迎来到软件工程的世界！当你在网页上划选一段文字，旁边优雅地弹出一个按钮，点击后 AI 像打字机一样为你解释这段话的含义——这一切是如何发生的？</p>
+        <p>这不仅仅是一个工具，更是一个极佳的<strong>工程学案例</strong>。在这个名为 <code>ExplainThis</code> 的项目中，融合了现代前端框架（React）、浏览器扩展 API（Chrome Extension V3）、流式网络请求（SSE）以及现代构建工具（Vite）。</p>
+        <p>这篇指南将带你穿透表象，建立起对现代 Web 开发的系统性认知。</p>
+    </section>
+
+    <section>
+        <h2>第一层：宏观架构与文件分组（Architecture）</h2>
+        <p>计算机科学中最重要的一课叫做<strong>“关注点分离（Separation of Concerns）”</strong>。一个复杂的系统必须被拆分成各司其职的模块。在这个插件中，世界被划分为四个孤立的维度：</p>
+
+        <ul>
+            <li><strong>🛂 <code>manifest.json</code>（宪法与通行证）</strong>：它是插件的心脏。浏览器读取它的第一眼，就知道插件叫什么、长什么样、需要什么权限（比如读写存储、访问哪些 API 域名），以及去哪里寻找其他脚本。</li>
+            <li><strong>👁️ <code>public/content.js</code>（眼睛与触角）</strong>：运行在用户当前打开的网页（宿主页面）中。它能直接操作网页的 DOM（监听你的鼠标划词、在旁边画一个浮动按钮）。<strong>注意：</strong>它和插件的其他部分是被隔离的，只能通过“发消息”来沟通。</li>
+            <li><strong>🧠 <code>public/background.js</code>（大脑与后台服务）</strong>：一个潜伏在浏览器后台的 Service Worker。它没有界面，默默监听着快捷键（Ctrl+E）、全局消息，并负责拉起各种窗口。</li>
+            <li><strong>🎨 <code>src/popup/</code> 与 <code>src/settings/</code>（面孔与界面）</strong>：这是用户真正看到的交互弹窗。它们是由 React 编写的现代 Web 页面。</li>
+        </ul>
+
+        <div class="note-box">
+            <strong>💡 新生思考题：</strong>为什么不把所有代码写在一个文件里？<br>
+            答：安全与沙盒机制。浏览器绝对不允许网页（宿主环境）直接读取你存在本地的 API 密钥。隔离的架构保护了用户的隐私。
+        </div>
+    </section>
+
+    <section>
+        <h2>第二层：核心代码实现（Code Implementation）</h2>
+        
+        <h3>1. 跨界通信（Message Passing）</h3>
+        <p>既然 <code>content.js</code>（网页环境）和插件本体是隔离的，当你在网页上点击“解释”按钮时，它是如何唤起插件弹窗的？答案是基于事件的异步通信：</p>
+        <pre><code>// content.js (网页中) 呼叫后台
+chrome.runtime.sendMessage({ action: 'openPopup' });
+
+// background.js (后台中) 接收呼叫，并执行操作
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'openPopup') {
+        chrome.action.openPopup();
+    }
+});</code></pre>
+
+        <h3>2. 统一接口层与多态设计（Polymorphism）</h3>
+        <p>项目支持 OpenAI、DeepSeek、Gemini 三大模型。如果不加设计，代码里会塞满 <code>if/else</code>。在 <code>src/shared/apiService.js</code> 中，我们运用了面向对象中类似“多态”的思想，构建了一个统一的 <code>AIService</code> 类：</p>
+        <p>不管用户选择哪个引擎，UI 层只需调用 <code>explainTextStream()</code>。底层服务会根据当前的 <code>provider</code> 状态，动态切换 BaseURL、Model 名称和鉴权方式。这就是<strong>对扩展开放，对修改封闭</strong>的工程思想。</p>
+
+        <h3>3. React 状态异步与闭包陷阱（Closure Trap）</h3>
+        <p>在开发历史记录点击功能时，我们遇到了一个经典 Bug：点击历史条目，原本期望立刻调用该条目的语言配置并发起请求，结果却毫无反应。原因在于 React 的状态更新是<strong>异步的</strong>：</p>
+        <pre><code>// ❌ 错误示范：状态不会立刻改变
+setLanguage('zh'); 
+explainText(text); // 这里读取到的还是旧语言 (en)！
+
+// ✅ 正确解法：参数透传，切断对异步状态的依赖
+explainText(text, overrideLang, overrideSpeed);</code></pre>
+        <p><strong>经验：</strong>在 React 中，如果你的下一个动作强依赖于当前最新状态，请通过函数参数传递，或者使用脱离渲染周期的 <code>useRef</code>。</p>
+
+        <h3>4. 让 AI “活”起来的流式传输（Server-Sent Events）</h3>
+        <p>为什么大模型的回答是一个字一个字蹦出来的，而不是转圈等一分钟突然全显示？因为我们使用了 <code>TextDecoder</code> 和 HTTP 流（Stream）。客户端不需要等整个 JSON 返回，只要有数据块（Chunk）到达，就立刻截获并渲染到 React 状态中，极大地提升了用户体验。</p>
+    </section>
+
+    <section>
+        <h2>第三层：配置依赖与工程化打包（Build System）</h2>
+        <p>如果你查看 <code>package.json</code>，会发现我们依赖了 <code>React</code> 和 <code>Vite</code>。为什么浏览器插件还需要这些？</p>
+        
+        <h3>1. 浏览器是不认识 JSX 的</h3>
+        <p>你写在 <code>.jsx</code> 文件里的 <code>&lt;div&gt;Hello&lt;/div&gt;</code>，浏览器根本看不懂。我们需要构建工具（Vite/Rollup）把现代的高级语法，<strong>编译（Compile）</strong>成浏览器认识的纯粹的 HTML、CSS 和原生 JavaScript。</p>
+
+        <h3>2. 依赖管理与 NPM</h3>
+        <p><code>package.json</code> 是项目的账本。当一个新开发者拿到源码，只需运行 <code>npm install</code>，Node.js 就会根据账本把所有需要的第三方工具下载到 <code>node_modules</code> 中。这解决了“在我的电脑上能跑，在你的电脑上跑不起来”的千古难题。</p>
+
+        <h3>3. 打包（Build）的作用</h3>
+        <p>运行 <code>npm run build</code> 后，Vite 会做以下几件事：</p>
+        <ul>
+            <li><strong>树摇（Tree-shaking）：</strong>剔除所有你引入了但没用到的废弃代码。</li>
+            <li><strong>代码压缩（Minification）：</strong>把长长的变量名变成 <code>a, b, c</code>，删除所有空格和换行，极大减小文件体积。</li>
+            <li><strong>输出（Dist）：</strong>最终生成一个 <code>dist</code> 文件夹。这个文件夹就是你最终提交给 Chrome 商店的纯净版产物。</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>第四层：给新生的合规与工程化避坑指南</h2>
+        
+        <ol>
+            <li><strong>敬畏异步（Embrace Asynchrony）：</strong> 网络请求、读取本地存储、定时器，统统是异步的（Async/Await, Promises）。计算机很快，但网络很慢。不要用线性的思维去写网络交互代码。</li>
+            <li><strong>最小权限原则（Principle of Least Privilege）：</strong> 你的插件可以申请读取用户所有的网页记录（<code>tabs</code> 权限），但如果你不需要，<strong>绝对不要申请</strong>。安全和隐私审查在真实的工程世界（比如 Google 审核）中是极其严格的。</li>
+            <li><strong>数据单一真相来源（Single Source of Truth）：</strong> 在项目中，我们曾发现语言配置在存储里叫 <code>explainLang</code>，在内存里叫 <code>lang</code>。这种命名不一致迟早会导致数据孤岛。记住：同一个概念在系统中只应该有一种表达。</li>
+            <li><strong>边界情况（Edge Cases）：</strong> 不要只写“成功时”的代码。API 密钥没填怎么办？网络断了怎么办？大模型返回格式乱了怎么办？优秀的工程师花在处理 <code>catch(error)</code> 上的时间，甚至比写正常逻辑还要多。</li>
+        </ol>
+
+        <p style="text-align: center; margin-top: 30px; font-weight: bold; color: var(--primary-color);">
+            “优秀的软件工程，就是在混沌中建立秩序，在变化中寻找不变。”<br>
+            祝你在计算机科学的旅途中享受创造的乐趣！
+        </p>
+    </section>
+
+</body>
+</html>
