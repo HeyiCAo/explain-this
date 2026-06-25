@@ -8,7 +8,7 @@
 - **Multiple AI Providers:** Choose your preferred AI backend. Currently supports:
   - **DeepSeek** (deepseek-chat)
   - **Google Gemini** (gemini-3.5-flash)
-  - **OpenAI** (gpt-4o-mini)
+  - **OpenAI** (gpt-5.4-mini)
 - **Speed Modes:**
   - **Fast:** A highly concise, one-paragraph summary. Gets straight to the point.
   - **Detail:** A comprehensive explanation with bullet points and examples.

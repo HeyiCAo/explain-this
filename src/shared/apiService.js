@@ -5,11 +5,11 @@ class AIService {
     this.baseURL = 'https://api.deepseek.com/v1';
     this.model = 'deepseek-chat';
 
-    this.geminiBaseURL = 'https://generativelanguage.googleapis.com/v1';
+    this.geminiBaseURL = 'https://generativelanguage.googleapis.com/v1beta';
     this.geminiModel = 'gemini-3.5-flash';
 
     this.openaiBaseURL = 'https://api.openai.com/v1';
-    this.openaiModel = 'gpt-4o-mini';
+    this.openaiModel = 'gpt-5.4-mini';
   }
 
   async loadApiKey() {
@@ -43,18 +43,18 @@ class AIService {
     if (this.provider === 'gemini') {
       return this.explainWithGemini(prompt, isFast, systemContent);
     }
+    if (this.provider === 'openai') {
+      return this.explainWithOpenAI(prompt, isFast, systemContent);
+    }
 
-    const apiUrl = this.provider === 'openai' ? this.openaiBaseURL : this.baseURL;
-    const apiModel = this.provider === 'openai' ? this.openaiModel : this.model;
-
-    const response = await fetch(`${apiUrl}/chat/completions`, {
+    const response = await fetch(`${this.baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: apiModel,
+        model: this.model,
         messages: [
           { role: 'system', content: systemContent },
           { role: 'user', content: prompt },
@@ -87,18 +87,18 @@ class AIService {
     if (this.provider === 'gemini') {
       return this.explainGeminiStream(prompt, isFast, systemContent, onChunk);
     }
+    if (this.provider === 'openai') {
+      return this.explainOpenAIStream(prompt, isFast, systemContent, onChunk);
+    }
 
-    const apiUrl = this.provider === 'openai' ? this.openaiBaseURL : this.baseURL;
-    const apiModel = this.provider === 'openai' ? this.openaiModel : this.model;
-
-    const response = await fetch(`${apiUrl}/chat/completions`, {
+    const response = await fetch(`${this.baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: apiModel,
+        model: this.model,
         messages: [
           { role: 'system', content: systemContent },
           { role: 'user', content: prompt },
@@ -121,6 +121,34 @@ class AIService {
     return this.formatExplanation(fullText);
   }
 
+  async explainOpenAIStream(prompt, isFast, systemContent, onChunk) {
+    const response = await fetch(`${this.openaiBaseURL}/responses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.openaiModel,
+        instructions: systemContent,
+        input: prompt,
+        max_output_tokens: isFast ? 800 : 2000,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Call Failure (HTTP ${response.status}): ${await this.readError(response)}`);
+    }
+
+    const fullText = await this.readSseStream(response, (data) => {
+      const delta = data.type === 'response.output_text.delta' ? (data.delta || '') : '';
+      if (delta) onChunk(delta);
+      return delta;
+    });
+    return this.formatExplanation(fullText);
+  }
+
   async explainGeminiStream(prompt, isFast, systemContent, onChunk) {
     const response = await fetch(`${this.geminiBaseURL}/models/${this.geminiModel}:streamGenerateContent?alt=sse`, {
       method: 'POST',
@@ -129,7 +157,7 @@ class AIService {
         'x-goog-api-key': this.apiKey,
       },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemContent }] },
+        system_instruction: { parts: [{ text: systemContent }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
           maxOutputTokens: isFast ? 800 : 2000,
@@ -211,7 +239,7 @@ ${languageHint}`;
         'x-goog-api-key': this.apiKey,
       },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemContent }] },
+        system_instruction: { parts: [{ text: systemContent }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
           maxOutputTokens: isFast ? 800 : 2000,
@@ -228,6 +256,37 @@ ${languageHint}`;
     const parts = data.candidates?.[0]?.content?.parts || [];
     const text = parts.map((part) => part.text || '').join('');
     return this.formatExplanation(text);
+  }
+
+  async explainWithOpenAI(prompt, isFast, systemContent) {
+    const response = await fetch(`${this.openaiBaseURL}/responses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.openaiModel,
+        instructions: systemContent,
+        input: prompt,
+        max_output_tokens: isFast ? 800 : 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Call Failure (HTTP ${response.status}): ${await this.readError(response)}`);
+    }
+
+    const data = await response.json();
+    return this.formatExplanation(this.extractOpenAIText(data));
+  }
+
+  extractOpenAIText(data) {
+    if (data.output_text) return data.output_text;
+    return (data.output || [])
+      .flatMap((item) => item.content || [])
+      .map((content) => content.text || '')
+      .join('');
   }
 
   async readError(response) {
