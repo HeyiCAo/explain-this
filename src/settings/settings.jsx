@@ -64,7 +64,7 @@ const settingsZh = {
       status_testing: '正在测试连接...',
       status_success: '连接成功！',
       status_invalid_retry: '密钥无效，请重试',
-      status_conn_failed: '连接失败，请检查网络',
+      status_conn_failed: '连接失败',
       mouseClick: '点击弹窗',
       mouseClickStep: '选词并点击后，AI搜索会自动开始。 '
     };
@@ -114,7 +114,7 @@ const settingsEn = {
       status_testing: 'Testing connection...',
       status_success: 'Success!',
       status_invalid_retry: 'Invalid API key. Try again.',
-      status_conn_failed: 'Connection failed. Check network.',
+      status_conn_failed: 'Connection failed',
       mouseClick: 'Click',
       mouseClickStep: 'When clicking on the popup after text selection, search will automatically begin.'
     };
@@ -232,92 +232,91 @@ function SettingsPage() {
     }
 
     function handleSaveKey() {
-        if (!apiKey.trim()) {
+        const normalizedKey = apiKey.trim();
+        if (!normalizedKey) {
             setStatus({ message: t.status_enter_key, type: 'error' });
-            return;
-        }
-        if (provider === 'deepseek' && !apiKey.startsWith('sk-')) {
-            setStatus({ message: t.status_invalid_key, type: 'error' });
-            return;
-        }
-        if (provider === 'gemini' && !apiKey.startsWith('AIza')) {
-            setStatus({ message: t.status_invalid_key, type: 'error' });
-            return;
-        }
-        if (provider === 'openai' && !apiKey.startsWith('sk-')) {
-            setStatus({ message: t.status_invalid_key, type: 'error' });
             return;
         }
         
         let keyPayload;
         if (provider === 'gemini') {
-            keyPayload = { provider, geminiApiKey: apiKey };
+            keyPayload = { provider, geminiApiKey: normalizedKey };
         } else if (provider === 'openai') {
-            keyPayload = { provider, openaiApiKey: apiKey };
+            keyPayload = { provider, openaiApiKey: normalizedKey };
         } else {
-            keyPayload = { provider, apiKey: apiKey };
+            keyPayload = { provider, apiKey: normalizedKey };
         }
         
         setStorage(keyPayload);
+        setApiKey(normalizedKey);
         setStatus({ message: t.status_success, type: 'success' });
     }
 
     async function handleTestConnection() {
+        const normalizedKey = apiKey.trim();
+        if (!normalizedKey) {
+            setStatus({ message: t.status_enter_key, type: 'error' });
+            return;
+        }
+
+        setStatus({ message: t.status_testing, type: 'info' });
+
+        let response;
         if (provider === 'deepseek') {
-            if (!apiKey.startsWith('sk-')) {
-                setStatus({ message: t.status_enter_key, type: 'error' });
-                return;
-            }
-            setStatus({ message: t.status_testing, type: 'info' });
             try {
-                const response = await fetch('https://api.deepseek.com/v1/models', {
-                    headers: { 'Authorization': `Bearer ${apiKey}` }
+                response = await fetch('https://api.deepseek.com/v1/models', {
+                    headers: { 'Authorization': `Bearer ${normalizedKey}` }
                 });
-                if (response.ok) {
-                    setStatus({ message: t.status_success, type: 'success' });
-                } else {
-                    setStatus({ message: t.status_invalid_key, type: 'error' });
-                }
-            } catch {
-                setStatus({ message: t.status_invalid_retry, type: 'error' });
+            } catch (error) {
+                setStatus({ message: `${t.status_conn_failed}: ${error.message}`, type: 'error' });
+                return;
             }
         } else if (provider === 'gemini') {
-            if (!apiKey.startsWith('AIza')) {
-                setStatus({ message: t.status_enter_key, type: 'error' });
-                return;
-            }
-            setStatus({ message: t.status_testing, type: 'info' });
             try {
-                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
-                    headers: { 'x-goog-api-key': apiKey }
+                response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': normalizedKey
+                    },
+                    body: JSON.stringify({
+                        contents: [{ role: 'user', parts: [{ text: 'Reply with OK.' }] }],
+                        generationConfig: { maxOutputTokens: 32, temperature: 0 }
+                    })
                 });
-                if (response.ok) {
-                    setStatus({ message: t.status_success, type: 'success' });
-                } else {
-                    setStatus({ message: t.status_invalid_key, type: 'error' });
-                }
-            } catch {
-                setStatus({ message: t.status_invalid_retry, type: 'error' });
+            } catch (error) {
+                setStatus({ message: `${t.status_conn_failed}: ${error.message}`, type: 'error' });
+                return;
             }
         } else if (provider === 'openai') {
-            if (!apiKey.startsWith('sk-')) {
-                setStatus({ message: t.status_enter_key, type: 'error' });
+            try {
+                response = await fetch('https://api.openai.com/v1/models', {
+                    headers: { 'Authorization': `Bearer ${normalizedKey}` }
+                });
+            } catch (error) {
+                setStatus({ message: `${t.status_conn_failed}: ${error.message}`, type: 'error' });
                 return;
             }
-            setStatus({ message: t.status_testing, type: 'info' });
-            try {
-                const response = await fetch('https://api.openai.com/v1/models', {
-                    headers: { 'Authorization': `Bearer ${apiKey}` }
-                });
-                if (response.ok) {
-                    setStatus({ message: t.status_success, type: 'success' });
-                } else {
-                    setStatus({ message: t.status_invalid_key, type: 'error' });
-                }
-            } catch {
-                setStatus({ message: t.status_invalid_retry, type: 'error' });
-            }
         }
+
+        if (response.ok) {
+            setApiKey(normalizedKey);
+            setStatus({ message: t.status_success, type: 'success' });
+            return;
+        }
+
+        const rawBody = await response.text();
+        let details;
+        try {
+            const payload = JSON.parse(rawBody);
+            details = payload?.error?.message || JSON.stringify(payload);
+        } catch {
+            details = rawBody || response.statusText;
+        }
+        setStatus({
+            message: `${t.status_conn_failed} (HTTP ${response.status})${details ? `: ${details}` : ''}`,
+            type: 'error'
+        });
     }
 
     return (

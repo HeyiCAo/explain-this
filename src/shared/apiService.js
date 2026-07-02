@@ -23,6 +23,7 @@ class AIService {
         } else {
             this.apiKey = result.apiKey || '';
         }
+        this.apiKey = String(this.apiKey).trim();
         resolve(this.apiKey);
       });
     });
