@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Explain This - Smooth AI Inline Text Search",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Quick search with AI. Ask anything uninterrupted.",
 
   "action": {
