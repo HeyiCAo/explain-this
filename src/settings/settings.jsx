@@ -141,7 +141,7 @@ const copy = {
         concise: 'Concise',
         detailed: 'Detailed',
         saveRecent: 'Save recent explanations',
-        saveRecentHint: 'Stores up to 10 history items and 100 cached explanations locally in this browser. Turning it off clears both.',
+        saveRecentHint: 'Stores up to 10 history items and 100 cached explanations locally. Turning it off clears both.',
         privacyTitle: 'Privacy',
         privacyBody: 'Only text you explicitly submit is processed. In free mode it passes through the Explain This backend; the original text is not persisted in our application database.',
         privacyLink: 'Read the full Privacy Policy',
