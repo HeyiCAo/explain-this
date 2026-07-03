@@ -51,36 +51,43 @@
 <body>
   <main>
     <h1>Privacy Policy</h1>
-    <p>Explain This is a Chrome extension that helps explain selected text using AI services.</p>
+    <p><strong>Effective date:</strong> July 3, 2026</p>
+    <p>Explain This explains text you explicitly select or enter. This policy covers the free Built-in AI mode, optional Bring Your Own Key (BYOK) mode, and local browser features.</p>
 
-    <h2>What data is processed</h2>
+    <h2>Built-in AI mode</h2>
+    <p>When you request an explanation, the selected text, response language, and explanation style are sent over HTTPS to the Explain This backend. The backend forwards the request to its configured AI provider and streams the answer back.</p>
+    <p>The application does <strong>not</strong> persist original selected text or generated explanations in its backend database. Request content is handled transiently in memory.</p>
+    <p>For quota enforcement and abuse prevention, the backend processes a random installation identifier, a salted hash derived from the request IP address, request counts, and cooldown/reset timestamps. The rate-limit store contains hashes and counters—not selected text, explanations, API keys, or browsing history. This state is deleted 31 days after the bucket's last activity.</p>
+    <p>Infrastructure providers may process normal delivery metadata under their own service terms. Application logging is configured not to include selected text or response bodies.</p>
+
+    <h2>Bring Your Own Key mode</h2>
+    <p>BYOK is an optional Advanced feature. Your API key is stored only in <code>chrome.storage.local</code>. BYOK requests go directly from the extension to the provider you select and do not pass through the Explain This backend.</p>
+
+    <h2>Local browser data</h2>
+    <p>The extension stores preferences, enabled-site settings, the random installation identifier, optional provider keys, and local usage counters in <code>chrome.storage.local</code>. If <strong>Save recent explanations</strong> is enabled, it also stores up to 10 recent items and 100 cached explanations.</p>
+    <p>Turning Save recent explanations off clears the local history and cache. Uninstalling the extension removes its local extension storage through Chrome.</p>
+
+    <h2>Site access and browsing activity</h2>
+    <p>Explain This does not track browsing history. By default, its selection script runs only after you invoke the extension on the active tab. You can optionally allow persistent access to specific domains under <strong>Enabled sites</strong> and remove that access at any time.</p>
+    <p>Only text you actively submit is processed. Do not submit passwords, authentication codes, private keys, payment information, or other sensitive data.</p>
+
+    <h2>Retention and use</h2>
     <ul>
-      <li><strong>Selected text:</strong> When you use the explain feature, selected text is sent to the configured AI provider to generate a response.</li>
-      <li><strong>API keys:</strong> Your API keys are stored locally in <code>chrome.storage.local</code> on your device.</li>
-      <li><strong>Usage stats and history:</strong> Simple usage counts and a short history of your recent explanations are stored locally for display inside the extension.</li>
+      <li>Selected text and explanations are not persisted by the Explain This backend application.</li>
+      <li>Anonymous quota and abuse counters are deleted 31 days after last activity.</li>
+      <li>Local settings, keys, and optional history remain until cleared or the extension is uninstalled.</li>
+      <li>Operational metadata follows infrastructure-provider settings and terms.</li>
     </ul>
+    <p>We do not sell personal data or use selected text to train our own models. AI and infrastructure providers may process data under their own terms.</p>
 
-    <h2>What is not collected</h2>
-    <ul>
-      <li>We do not collect or store your data on our own servers.</li>
-      <li>We do not track your web browsing history.</li>
-      <li>We do not sell or share your data with third parties beyond the AI provider you choose.</li>
-    </ul>
+    <h2>Service providers</h2>
+    <p>Built-in AI uses Cloudflare Workers and Durable Objects for secure relay and anonymous quota enforcement, plus the AI provider configured by Explain This. BYOK uses OpenAI, Google Gemini, or DeepSeek directly, according to your choice. The Built-in AI provider may change without an extension update.</p>
 
-    <h2>Where data is stored</h2>
-    <p>All settings, keys, and history are stored locally in your browser. The extension does not operate an external backend or database.</p>
-
-    <h2>Third-party services</h2>
-    <p>The extension sends selected text securely over HTTPS to the AI provider you configure in settings. Supported providers include:</p>
-    <ul>
-      <li>OpenAI API</li>
-      <li>DeepSeek API</li>
-      <li>Gemini API (Google AI Studio)</li>
-    </ul>
-    <p>Please review each provider's policy for how they handle data.</p>
+    <h2>Your choices</h2>
+    <p>You can disable and clear recent explanations, remove enabled-site permissions, clear a BYOK credential, switch AI modes, or uninstall the extension. Anonymous backend quota records contain no account profile or request content.</p>
 
     <h2>Contact</h2>
-    <p>If you have questions about this policy, contact the repository owner.</p>
+    <p>Email <a href="mailto:hcao73@wisc.edu">hcao73@wisc.edu</a> or open an issue at <a href="https://github.com/HeyiCAo/ExplainThis">github.com/HeyiCAo/ExplainThis</a>.</p>
   </main>
 </body>
 </html>

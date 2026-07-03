@@ -1642,3 +1642,38 @@ button:active {
         transition-delay: 0ms !important;
     }
 }
+
+.ai-mode-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 4px;
+}
+
+.ai-mode-badge > span {
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: #e7f2ff;
+    color: #2269b8;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.ai-mode-badge small {
+    color: #8490a2;
+    font-size: 9px;
+    font-weight: 650;
+}
+
+@media (prefers-color-scheme: dark) {
+    .ai-mode-badge > span {
+        background: #243e5f;
+        color: #aed5ff;
+    }
+
+    .ai-mode-badge small {
+        color: #9aa8bb;
+    }
+}

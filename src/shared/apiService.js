@@ -1,105 +1,245 @@
+const BUILT_IN_API_BASE_URL = (
+  import.meta.env.VITE_BUILT_IN_API_BASE_URL || 'https://api.explainthis.app/v1'
+).replace(/\/+$/, '');
+
+const STORAGE_KEYS = [
+  'aiMode',
+  'apiKey',
+  'geminiApiKey',
+  'openaiApiKey',
+  'provider',
+  'installId',
+];
+
+export class AIServiceError extends Error {
+  constructor(code, message = code, details = {}) {
+    super(message);
+    this.name = 'AIServiceError';
+    this.code = code;
+    this.details = details;
+  }
+}
+
 class AIService {
   constructor() {
-    this.apiKey = null;
+    this.apiKey = '';
+    this.mode = 'builtIn';
     this.provider = 'openai';
-    this.baseURL = 'https://api.deepseek.com/v1';
-    this.model = 'deepseek-chat';
+    this.installId = '';
 
+    this.deepseekBaseURL = 'https://api.deepseek.com/v1';
+    this.deepseekModel = 'deepseek-chat';
     this.geminiBaseURL = 'https://generativelanguage.googleapis.com/v1beta';
     this.geminiModel = 'gemini-3.5-flash';
-
     this.openaiBaseURL = 'https://api.openai.com/v1';
     this.openaiModel = 'gpt-5.4-mini';
   }
 
-  async loadApiKey() {
+  getStorage(keys) {
     return new Promise((resolve) => {
-      chrome.storage.local.get(['apiKey', 'geminiApiKey', 'openaiApiKey', 'provider'], (result) => {
-        this.provider = result.provider || 'openai';
-        if (this.provider === 'gemini') {
-            this.apiKey = result.geminiApiKey || '';
-        } else if (this.provider === 'openai') {
-            this.apiKey = result.openaiApiKey || '';
-        } else {
-            this.apiKey = result.apiKey || '';
-        }
-        this.apiKey = String(this.apiKey).trim();
-        resolve(this.apiKey);
-      });
+      if (typeof chrome === 'undefined' || !chrome?.storage?.local) {
+        resolve({});
+        return;
+      }
+      chrome.storage.local.get(keys, resolve);
     });
+  }
+
+  setStorage(values) {
+    return new Promise((resolve) => {
+      if (typeof chrome === 'undefined' || !chrome?.storage?.local) {
+        resolve();
+        return;
+      }
+      chrome.storage.local.set(values, resolve);
+    });
+  }
+
+  async loadConfiguration() {
+    const result = await this.getStorage(STORAGE_KEYS);
+    const hasSavedKey = [result.apiKey, result.geminiApiKey, result.openaiApiKey]
+      .some((key) => String(key || '').trim());
+
+    this.mode = result.aiMode || (hasSavedKey ? 'byok' : 'builtIn');
+    this.provider = result.provider || 'openai';
+    this.installId = result.installId || '';
+
+    if (this.provider === 'gemini') {
+      this.apiKey = result.geminiApiKey || '';
+    } else if (this.provider === 'deepseek') {
+      this.apiKey = result.apiKey || '';
+    } else {
+      this.apiKey = result.openaiApiKey || '';
+    }
+    this.apiKey = String(this.apiKey).trim();
+
+    if (!this.installId) {
+      this.installId = globalThis.crypto?.randomUUID?.()
+        || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await this.setStorage({ installId: this.installId });
+    }
+
+    return {
+      mode: this.mode,
+      provider: this.provider,
+      apiKey: this.apiKey,
+      installId: this.installId,
+    };
   }
 
   async explainText(text, options = {}) {
-    await this.loadApiKey();
-    if (!this.apiKey) {
-      throw new Error('Please set up an API key first');
+    await this.loadConfiguration();
+    if (this.mode === 'builtIn') {
+      return this.explainWithBuiltInAI(text, options, false);
     }
+    this.assertByokKey();
 
-    const prompt = this.buildPrompt(text, options);
-    const language = options.language || 'zh';
-    const speed = options.speed || 'fast';
-    const isFast = speed === 'fast';
-    const systemContent = this.buildSystemContent(language, isFast);
-
+    const request = this.buildByokRequest(text, options);
     if (this.provider === 'gemini') {
-      return this.explainWithGemini(prompt, isFast, systemContent);
+      return this.explainWithGemini(request.prompt, request.isFast, request.systemContent);
     }
     if (this.provider === 'openai') {
-      return this.explainWithOpenAI(prompt, isFast, systemContent);
+      return this.explainWithOpenAI(request.prompt, request.isFast, request.systemContent);
     }
-
-    const response = await fetch(`${this.baseURL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: [
-          { role: 'system', content: systemContent },
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: isFast ? 800 : 2000,
-        temperature: isFast ? 0.1 : 0.4,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API Call Failure (HTTP ${response.status}): ${await this.readError(response)}`);
-    }
-
-    const data = await response.json();
-    return this.formatExplanation(data.choices?.[0]?.message?.content || '');
+    return this.explainWithDeepSeek(request.prompt, request.isFast, request.systemContent);
   }
 
   async explainTextStream(text, options = {}, onChunk = () => {}) {
-    await this.loadApiKey();
-    if (!this.apiKey) {
-      throw new Error('Please set up an API key first');
+    await this.loadConfiguration();
+    if (this.mode === 'builtIn') {
+      return this.explainWithBuiltInAI(text, options, true, onChunk);
     }
+    this.assertByokKey();
 
-    const prompt = this.buildPrompt(text, options);
-    const language = options.language || 'zh';
-    const speed = options.speed || 'fast';
-    const isFast = speed === 'fast';
-    const systemContent = this.buildSystemContent(language, isFast);
-
+    const request = this.buildByokRequest(text, options);
     if (this.provider === 'gemini') {
-      return this.explainGeminiStream(prompt, isFast, systemContent, onChunk);
+      return this.explainGeminiStream(
+        request.prompt,
+        request.isFast,
+        request.systemContent,
+        onChunk,
+      );
     }
     if (this.provider === 'openai') {
-      return this.explainOpenAIStream(prompt, isFast, systemContent, onChunk);
+      return this.explainOpenAIStream(
+        request.prompt,
+        request.isFast,
+        request.systemContent,
+        onChunk,
+      );
+    }
+    return this.explainDeepSeekStream(
+      request.prompt,
+      request.isFast,
+      request.systemContent,
+      onChunk,
+    );
+  }
+
+  assertByokKey() {
+    if (!this.apiKey) {
+      throw new AIServiceError(
+        'BYOK_KEY_REQUIRED',
+        'A personal API key is required in Bring Your Own Key mode.',
+      );
+    }
+  }
+
+  buildByokRequest(text, options) {
+    const language = options.language || 'zh';
+    const isFast = (options.speed || 'fast') === 'fast';
+    return {
+      prompt: this.buildPrompt(text, options),
+      systemContent: this.buildSystemContent(language, isFast),
+      isFast,
+    };
+  }
+
+  async explainWithBuiltInAI(text, options, stream, onChunk = () => {}) {
+    let response;
+    try {
+      response = await fetch(`${BUILT_IN_API_BASE_URL}/explain`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-ExplainThis-Client': this.installId,
+        },
+        body: JSON.stringify({
+          text,
+          language: options.language || 'zh',
+          style: options.speed || 'fast',
+          stream,
+        }),
+      });
+    } catch {
+      throw new AIServiceError('SERVICE_UNAVAILABLE');
     }
 
-    const response = await fetch(`${this.baseURL}/chat/completions`, {
+    await this.storeFreeUsageFromResponse(response);
+    if (!response.ok) {
+      throw await this.createProxyError(response);
+    }
+
+    if (!stream) {
+      const data = await response.json();
+      return this.formatExplanation(data.explanation || '');
+    }
+
+    const fullText = await this.readSseStream(response, (data) => {
+      const delta = data.delta || '';
+      if (delta) onChunk(delta);
+      return delta;
+    });
+    return this.formatExplanation(fullText);
+  }
+
+  async createProxyError(response) {
+    let payload = {};
+    try {
+      payload = await response.json();
+    } catch {
+      // The UI intentionally never exposes raw backend or provider responses.
+    }
+    const code = payload?.error?.code || (
+      response.status === 413
+        ? 'TEXT_TOO_LONG'
+        : response.status === 429
+          ? 'RATE_LIMITED'
+          : 'SERVICE_UNAVAILABLE'
+    );
+    return new AIServiceError(code, code, {
+      retryAfter: payload?.error?.retryAfter,
+      resetAt: payload?.error?.resetAt,
+      maxCharacters: payload?.error?.maxCharacters,
+    });
+  }
+
+  async storeFreeUsageFromResponse(response) {
+    const limit = Number(response.headers.get('X-RateLimit-Limit'));
+    const remaining = Number(response.headers.get('X-RateLimit-Remaining'));
+    const resetAt = response.headers.get('X-RateLimit-Reset');
+    if (!Number.isFinite(limit) || !Number.isFinite(remaining)) return;
+
+    await this.setStorage({
+      freeUsage: {
+        date: new Date().toISOString().slice(0, 10),
+        limit,
+        remaining: Math.max(0, remaining),
+        resetAt: resetAt || null,
+        updatedAt: Date.now(),
+      },
+    });
+  }
+
+  async explainDeepSeekStream(prompt, isFast, systemContent, onChunk) {
+    const response = await fetch(`${this.deepseekBaseURL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: this.model,
+        model: this.deepseekModel,
         messages: [
           { role: 'system', content: systemContent },
           { role: 'user', content: prompt },
@@ -110,10 +250,7 @@ class AIService {
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`API Call Failure (HTTP ${response.status}): ${await this.readError(response)}`);
-    }
-
+    if (!response.ok) throw new AIServiceError('PROVIDER_ERROR');
     const fullText = await this.readSseStream(response, (data) => {
       const delta = data.choices?.[0]?.delta?.content || '';
       if (delta) onChunk(delta);
@@ -127,7 +264,7 @@ class AIService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
         model: this.openaiModel,
@@ -138,10 +275,7 @@ class AIService {
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`API Call Failure (HTTP ${response.status}): ${await this.readError(response)}`);
-    }
-
+    if (!response.ok) throw new AIServiceError('PROVIDER_ERROR');
     const fullText = await this.readSseStream(response, (data) => {
       const delta = data.type === 'response.output_text.delta' ? (data.delta || '') : '';
       if (delta) onChunk(delta);
@@ -151,26 +285,26 @@ class AIService {
   }
 
   async explainGeminiStream(prompt, isFast, systemContent, onChunk) {
-    const response = await fetch(`${this.geminiBaseURL}/models/${this.geminiModel}:streamGenerateContent?alt=sse`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': this.apiKey,
-      },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemContent }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: isFast ? 800 : 2000,
-          temperature: isFast ? 0.1 : 0.4,
+    const response = await fetch(
+      `${this.geminiBaseURL}/models/${this.geminiModel}:streamGenerateContent?alt=sse`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
         },
-      }),
-    });
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemContent }] },
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: isFast ? 800 : 2000,
+            temperature: isFast ? 0.1 : 0.4,
+          },
+        }),
+      },
+    );
 
-    if (!response.ok) {
-      throw new Error(`API Call Failure (HTTP ${response.status}): ${await this.readError(response)}`);
-    }
-
+    if (!response.ok) throw new AIServiceError('PROVIDER_ERROR');
     const fullText = await this.readSseStream(response, (data) => {
       const delta = (data.candidates?.[0]?.content?.parts || [])
         .map((part) => part.text || '')
@@ -183,9 +317,7 @@ class AIService {
 
   async readSseStream(response, extractDelta) {
     const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('Streaming response is not supported in this browser');
-    }
+    if (!reader) throw new AIServiceError('STREAM_UNAVAILABLE');
 
     const decoder = new TextDecoder();
     let buffer = '';
@@ -195,7 +327,6 @@ class AIService {
       const { value, done } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-
       const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() || '';
 
@@ -207,55 +338,79 @@ class AIService {
         try {
           const delta = extractDelta(JSON.parse(payload));
           fullText += delta || '';
-        } catch (error) {
-          console.warn('Failed to parse stream chunk', error);
+        } catch {
+          // Ignore provider keepalive or non-content events.
         }
       }
     }
-
     return fullText;
   }
 
   buildSystemContent(language, isFast) {
-    const languageHint = language === 'en' ? 'Use English for the entire response.' : '请全程使用中文回答。';
+    const languageHint = language === 'en'
+      ? 'Use English for the entire response.'
+      : '请全程使用中文回答。';
     const systemHeader = isFast
       ? (language === 'en'
-        ? 'You are a highly concise dictionary assistant. Provide ONLY a single short paragraph (maximum 3 sentences) summarizing the core meaning. Do NOT output any bullet points, lists, examples, or extra details.'
-        : '你是一个极简词典助手。请仅用一段简短的话（最多3句话）总结核心含义。绝不能输出任何列表、要点、例子或多余细节，说完即止。')
+        ? 'You are a concise explainer. Give only one short paragraph of at most three sentences.'
+        : '你是一个简明的解释助手。请仅用一段不超过三句话的内容说明核心含义。')
       : (language === 'en'
-        ? 'You are a professional explainer. Use simple language and include helpful examples.'
-        : '你是一个专业的解释助手。请用简单易懂的语言详细解释用户输入的内容。');
-    return `${systemHeader}
-${!isFast ? (language === 'en'
-    ? 'Format: first give a one-sentence summary, then explain in bullets, then include a relevant example.'
-    : '格式要求：1. 第一行用一句话总结 2. 然后分点详细解释 3. 最后给出相关例子') : ''}
-${languageHint}`;
+        ? 'You are a professional explainer. Use simple language and include a helpful example.'
+        : '你是一个专业的解释助手。请用简单易懂的语言详细解释，并给出有帮助的例子。');
+    const formatHint = isFast
+      ? ''
+      : (language === 'en'
+        ? 'Start with a one-sentence summary, then key points, then one relevant example.'
+        : '先用一句话总结，再分点说明，最后给出一个相关例子。');
+    return `${systemHeader}\n${formatHint}\n${languageHint}`;
   }
 
-  async explainWithGemini(prompt, isFast, systemContent) {
-    const response = await fetch(`${this.geminiBaseURL}/models/${this.geminiModel}:generateContent`, {
+  async explainWithDeepSeek(prompt, isFast, systemContent) {
+    const response = await fetch(`${this.deepseekBaseURL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': this.apiKey,
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemContent }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: isFast ? 800 : 2000,
-          temperature: isFast ? 0.1 : 0.4,
-        },
+        model: this.deepseekModel,
+        messages: [
+          { role: 'system', content: systemContent },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: isFast ? 800 : 2000,
+        temperature: isFast ? 0.1 : 0.4,
       }),
     });
-
-    if (!response.ok) {
-      throw new Error(`API Call Failure (HTTP ${response.status}): ${await this.readError(response)}`);
-    }
-
+    if (!response.ok) throw new AIServiceError('PROVIDER_ERROR');
     const data = await response.json();
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    const text = parts.map((part) => part.text || '').join('');
+    return this.formatExplanation(data.choices?.[0]?.message?.content || '');
+  }
+
+  async explainWithGemini(prompt, isFast, systemContent) {
+    const response = await fetch(
+      `${this.geminiBaseURL}/models/${this.geminiModel}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemContent }] },
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: isFast ? 800 : 2000,
+            temperature: isFast ? 0.1 : 0.4,
+          },
+        }),
+      },
+    );
+    if (!response.ok) throw new AIServiceError('PROVIDER_ERROR');
+    const data = await response.json();
+    const text = (data.candidates?.[0]?.content?.parts || [])
+      .map((part) => part.text || '')
+      .join('');
     return this.formatExplanation(text);
   }
 
@@ -264,7 +419,7 @@ ${languageHint}`;
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
         model: this.openaiModel,
@@ -273,11 +428,7 @@ ${languageHint}`;
         max_output_tokens: isFast ? 800 : 2000,
       }),
     });
-
-    if (!response.ok) {
-      throw new Error(`API Call Failure (HTTP ${response.status}): ${await this.readError(response)}`);
-    }
-
+    if (!response.ok) throw new AIServiceError('PROVIDER_ERROR');
     const data = await response.json();
     return this.formatExplanation(this.extractOpenAIText(data));
   }
@@ -290,21 +441,10 @@ ${languageHint}`;
       .join('');
   }
 
-  async readError(response) {
-    try {
-      return JSON.stringify(await response.json());
-    } catch {
-      return response.text();
-    }
-  }
-
   buildPrompt(text, options) {
-    const language = options.language || 'zh';
-    const prefix = language === 'en' ? 'Explain:' : '请解释：';
+    const prefix = (options.language || 'zh') === 'en' ? 'Explain: ' : '请解释：';
     let prompt = `${prefix}${text}`;
-    if (options.context) {
-      prompt += `\n上下文：${options.context}`;
-    }
+    if (options.context) prompt += `\n上下文：${options.context}`;
     return prompt;
   }
 
@@ -343,8 +483,12 @@ ${languageHint}`;
         }
         Array.from(child.attributes).forEach((attr) => {
           if (attr.name === 'class') {
-            const classes = attr.value.split(/\s+/).filter((className) => allowedClass.has(className));
-            classes.length ? child.setAttribute('class', classes.join(' ')) : child.removeAttribute('class');
+            const classes = attr.value
+              .split(/\s+/)
+              .filter((className) => allowedClass.has(className));
+            classes.length
+              ? child.setAttribute('class', classes.join(' '))
+              : child.removeAttribute('class');
           } else {
             child.removeAttribute(attr.name);
           }
@@ -359,19 +503,19 @@ ${languageHint}`;
 
   renderMath(html) {
     let out = html;
-    out = out.replace(/\\\[((?:.|\n)*?)\\\]/g, (match, content) => {
-      return `<div class="math-display">${this.latexToHtml(content)}</div>`;
-    });
-    out = out.replace(/\\\((.*?)\\\)/g, (match, content) => {
-      return `<span class="math-inline">${this.latexToHtml(content)}</span>`;
-    });
+    out = out.replace(/\\\[((?:.|\n)*?)\\\]/g, (match, content) => (
+      `<div class="math-display">${this.latexToHtml(content)}</div>`
+    ));
+    out = out.replace(/\\\((.*?)\\\)/g, (match, content) => (
+      `<span class="math-inline">${this.latexToHtml(content)}</span>`
+    ));
     return out;
   }
 
   latexToHtml(latex) {
     if (!latex) return '';
-    let s = latex;
-    s = s.replace(/\\Delta/g, 'Δ')
+    let value = latex
+      .replace(/\\Delta/g, 'Δ')
       .replace(/\\to/g, '→')
       .replace(/\\infty/g, '∞')
       .replace(/\\cdot/g, '·')
@@ -379,22 +523,25 @@ ${languageHint}`;
       .replace(/\\leq/g, '≤')
       .replace(/\\geq/g, '≥');
 
-    for (let i = 0; i < 3; i += 1) {
-      s = s.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, (match, a, b) => {
-        return `<span class="frac"><span class="num">${a}</span><span class="den">${b}</span></span>`;
-      });
+    for (let index = 0; index < 3; index += 1) {
+      value = value.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, (match, top, bottom) => (
+        `<span class="frac"><span class="num">${top}</span><span class="den">${bottom}</span></span>`
+      ));
     }
 
-    s = s.replace(/_({[^}]+}|[^\s^_])/g, (match) => {
-      const val = match.slice(1).replace(/^\{|\}$/g, '');
-      return `<sub>${val}</sub>`;
+    value = value.replace(/_({[^}]+}|[^\s^_])/g, (match) => {
+      const subscript = match.slice(1).replace(/^\{|\}$/g, '');
+      return `<sub>${subscript}</sub>`;
     });
-    s = s.replace(/\^({[^}]+}|[^\s^_])/g, (match) => {
-      const val = match.slice(1).replace(/^\{|\}$/g, '');
-      return `<sup>${val}</sup>`;
+    value = value.replace(/\^({[^}]+}|[^\s^_])/g, (match) => {
+      const superscript = match.slice(1).replace(/^\{|\}$/g, '');
+      return `<sup>${superscript}</sup>`;
     });
-    s = s.replace(/\\lim<sub>(.*?)<\/sub>/g, (match, sub) => `<span class="op">lim</span><sub>${sub}</sub>`);
-    return s.replace(/\\lim/g, '<span class="op">lim</span>');
+    value = value.replace(
+      /\\lim<sub>(.*?)<\/sub>/g,
+      (match, subscript) => `<span class="op">lim</span><sub>${subscript}</sub>`,
+    );
+    return value.replace(/\\lim/g, '<span class="op">lim</span>');
   }
 }
 

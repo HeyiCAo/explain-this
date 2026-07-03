@@ -35,8 +35,15 @@ const popupZh = {
   history_title: '最近记录',
   clear_history: '清空',
   empty_input: '请输入要解释的内容',
-  api_error_prefix: '解释失败：',
-  retry: '重试'
+  retry: '重试',
+  built_in: '内置 AI',
+  byok: '自带 Key',
+  free_left: '今日剩余 {count} 次',
+  quota_exceeded: '你已用完今天的 50 次免费解释。请明天再来，或在高级设置中添加自己的 API Key。',
+  text_too_long: '免费模式下这段文字太长了。请缩短到 1000 字以内，或使用自己的 API Key。',
+  rate_limited: '请求有点频繁，请稍等片刻再试。',
+  key_required: '请先在高级设置中添加自己的 API Key，或切换回内置 AI。',
+  generic_error: '解释暂时失败，请稍后再试。'
 };
 
 const popupEn = {
@@ -51,13 +58,20 @@ const popupEn = {
   history_title: 'Recent',
   clear_history: 'Clear',
   empty_input: 'Please enter text to explain',
-  api_error_prefix: 'Failed to explain: ',
-  retry: 'Try Again'
+  retry: 'Try Again',
+  built_in: 'Built-in AI',
+  byok: 'Your API key',
+  free_left: '{count} free today',
+  quota_exceeded: 'You’ve used today’s 50 free explanations. Come back tomorrow or add your own API key.',
+  text_too_long: 'This selection is too long for the free plan. Try a shorter passage or use your own API key.',
+  rate_limited: 'That was a little too fast. Please wait a moment and try again.',
+  key_required: 'Add your API key in Advanced settings, or switch back to Built-in AI.',
+  generic_error: 'Explanation failed. Please try again in a moment.'
 };
 
 const firstRunZh = {
   eyebrow: '欢迎使用 Explain This',
-  step: '第 1 步，共 5 步',
+  step: '第 1 步，共 4 步',
   continue: '继续前往设置',
   opening: '正在打开设置…',
   languageTitle: '选择你的使用语言',
@@ -70,7 +84,7 @@ const firstRunZh = {
 
 const firstRunEn = {
   eyebrow: 'Welcome to Explain This',
-  step: 'Step 1 of 5',
+  step: 'Step 1 of 4',
   continue: 'Continue to Settings',
   opening: 'Opening Settings…',
   languageTitle: 'Choose your language',
@@ -92,7 +106,7 @@ async function openOnboardingSettings() {
 }
 
 // ========== 简单内存缓存 ==========
-function useSimpleCache() {
+function useSimpleCache(enabled) {
   const cacheRef = useRef({});
 
   useEffect(() => {
@@ -116,11 +130,13 @@ function useSimpleCache() {
   };
 
   const getCache = useCallback((text, language, speed) => {
+    if (!enabled) return null;
     const key = normalizeKey(text, language, speed);
     return cacheRef.current[key] || null;
-  }, []);
+  }, [enabled]);
 
   const upsertCache = useCallback((text, explanation, language, speed) => {
+    if (!enabled) return;
     const key = normalizeKey(text, language, speed);
     cacheRef.current[key] = {
       key,
@@ -135,7 +151,7 @@ function useSimpleCache() {
       const newList = [cacheRef.current[key], ...list.filter(i => i.key !== key)].slice(0, 100);
       setStorage({ explainCache: newList });
     });
-  }, []);
+  }, [enabled]);
 
   return { getCache, upsertCache };
 }
@@ -207,7 +223,6 @@ function LanguageWelcome({ language, onLanguageChange }) {
         <span></span>
         <span></span>
         <span></span>
-        <span></span>
       </div>
 
       <section className="welcome-page">
@@ -256,11 +271,14 @@ function Popup() {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [onboardingRequired, setOnboardingRequired] = useState(null);
   const [pendingSelection, setPendingSelection] = useState(null);
+  const [saveRecentExplanations, setSaveRecentExplanations] = useState(true);
+  const [aiMode, setAiMode] = useState('builtIn');
+  const [freeRemaining, setFreeRemaining] = useState(50);
 
   const langWrapRef = useRef(null);
   const processedSelectionIdsRef = useRef(new Set());
   const aiServiceRef = useRef(new AIService());
-  const { getCache, upsertCache } = useSimpleCache();
+  const { getCache, upsertCache } = useSimpleCache(saveRecentExplanations);
   const t = language === 'zh' ? popupZh : popupEn;
 
   // 初始化
@@ -276,11 +294,16 @@ function Popup() {
       'onboardingStarted',
       'apiKey',
       'geminiApiKey',
-      'openaiApiKey'
+      'openaiApiKey',
+      'aiMode',
+      'saveRecentExplanations',
+      'freeUsage'
     ]).then(result => {
       const hasSavedKey = [result.apiKey, result.geminiApiKey, result.openaiApiKey]
         .some(key => String(key || '').trim());
       const setupComplete = result.onboardingComplete === true || hasSavedKey;
+      const nextMode = result.aiMode || (hasSavedKey ? 'byok' : 'builtIn');
+      const shouldSaveRecent = result.saveRecentExplanations !== false;
       
       if (result.lang) {
         setLanguage(result.lang);
@@ -288,10 +311,15 @@ function Popup() {
       if (result.explainSpeed) {
         setSpeed(result.explainSpeed);
       }
-      if (result.history) setHistoryList(result.history);
+      setAiMode(nextMode);
+      setSaveRecentExplanations(shouldSaveRecent);
+      if (shouldSaveRecent && result.history) setHistoryList(result.history);
+      if (result.freeUsage?.date === new Date().toISOString().slice(0, 10)) {
+        setFreeRemaining(Number(result.freeUsage.remaining) || 0);
+      }
 
       if (hasSavedKey && result.onboardingComplete !== true) {
-        setStorage({ onboardingComplete: true });
+        setStorage({ onboardingComplete: true, aiMode: 'byok' });
       }
 
       if (!setupComplete && result.onboardingStarted) {
@@ -311,11 +339,27 @@ function Popup() {
     });
   }, []);
 
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome?.runtime?.sendMessage) return;
+    chrome.runtime.sendMessage({ action: 'activateCurrentTab' }, () => {
+      void chrome.runtime.lastError;
+    });
+  }, []);
+
   // popup window 被复用时也要接收新的划词请求
   useEffect(() => {
     if (typeof chrome === 'undefined' || !chrome?.storage?.onChanged) return undefined;
     const handleStorageChange = (changes, areaName) => {
       if (areaName !== 'local') return;
+      if (changes.aiMode?.newValue) setAiMode(changes.aiMode.newValue);
+      if (changes.saveRecentExplanations) {
+        const enabled = changes.saveRecentExplanations.newValue !== false;
+        setSaveRecentExplanations(enabled);
+        if (!enabled) setHistoryList([]);
+      }
+      if (changes.freeUsage?.newValue) {
+        setFreeRemaining(Number(changes.freeUsage.newValue.remaining) || 0);
+      }
       const request = changes.pendingExplanation?.newValue;
       if (request?.text) {
         setPendingSelection(request);
@@ -380,20 +424,29 @@ function Popup() {
       recordUsage({ inputText: text, outputText: streamedText });
       upsertCache(text, html, currentLang, currentSpeed);
 
-      setHistoryList((currentHistory) => {
-        const newHistory = [
-          { key: text, text: text.substring(0, 50), timestamp: new Date().toLocaleString(), language: currentLang, speed: currentSpeed },
-          ...currentHistory.filter(h => h.key !== text)
-        ].slice(0, 10);
-        setStorage({ history: newHistory });
-        return newHistory;
-      });
+      if (saveRecentExplanations) {
+        setHistoryList((currentHistory) => {
+          const newHistory = [
+            { key: text, text: text.substring(0, 50), timestamp: new Date().toLocaleString(), language: currentLang, speed: currentSpeed },
+            ...currentHistory.filter(h => h.key !== text)
+          ].slice(0, 10);
+          setStorage({ history: newHistory });
+          return newHistory;
+        });
+      }
     } catch (error) {
-      setResult({ type: 'error', message: `${t.api_error_prefix}${error.message}` });
+      const errorMessages = {
+        QUOTA_EXCEEDED: t.quota_exceeded,
+        TEXT_TOO_LONG: t.text_too_long,
+        RATE_LIMITED: t.rate_limited,
+        COOLDOWN_ACTIVE: t.rate_limited,
+        BYOK_KEY_REQUIRED: t.key_required,
+      };
+      setResult({ type: 'error', message: errorMessages[error.code] || t.generic_error });
     } finally {
       setLoading(false);
     }
-  }, [language, speed, getCache, upsertCache, t]);
+  }, [language, speed, getCache, upsertCache, saveRecentExplanations, t]);
 
   const handleSubmit = useCallback(() => {
     explainText(inputText);
@@ -442,6 +495,12 @@ function Popup() {
       <div className="popup-header">
         <div>
           <h1 className="popup-title">{t.app_title}</h1>
+          <div className="ai-mode-badge">
+            <span>{aiMode === 'builtIn' ? t.built_in : t.byok}</span>
+            {aiMode === 'builtIn' && (
+              <small>{t.free_left.replace('{count}', freeRemaining)}</small>
+            )}
+          </div>
         </div>
         <button className="settings-btn" onClick={() => {
           if (typeof chrome !== 'undefined' && chrome?.runtime?.openOptionsPage) {

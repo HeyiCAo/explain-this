@@ -1,0 +1,19 @@
+name = "explain-this-api"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+[vars]
+AI_BASE_URL = "https://api.openai.com/v1"
+FREE_DAILY_LIMIT = "50"
+FREE_MAX_CHARACTERS = "1000"
+FREE_REQUESTS_PER_MINUTE = "8"
+COOLDOWN_SECONDS = "120"
+ALLOWED_EXTENSION_IDS = ""
+
+[[durable_objects.bindings]]
+name = "RATE_LIMITER"
+class_name = "RateLimitBucket"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimitBucket"]

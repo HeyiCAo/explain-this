@@ -1,41 +1,97 @@
-# Explain This
+# Explain This – Instant AI Explanations
 
-**Explain This** is a lightweight, AI-powered Chrome extension designed to help you quickly understand any text on the web without breaking your flow. Simply select a word, phrase, or paragraph, and get instant, streaming explanations right where you are.
+Understand highlighted text instantly without leaving the page.
+
+**50 free AI explanations every day. No API key required.**
+
+Explain This is a lightweight Chrome extension for reading the web with less
+friction. Highlight a word, phrase, or passage, click **Explain this**, and get a
+clear streaming explanation in English or Chinese.
 
 ## Features
 
-- **Seamless Interaction:** Select any text and click the floating button (or use `Ctrl+E` / `Cmd+E`) to get an instant explanation.
-- **Multiple AI Providers:** Choose your preferred AI backend. Currently supports:
-  - **DeepSeek** (deepseek-chat)
-  - **Google Gemini** (gemini-3.5-flash)
-  - **OpenAI** (gpt-5.4-mini)
-- **Speed Modes:**
-  - **Fast:** A highly concise, one-paragraph summary. Gets straight to the point.
-  - **Detail:** A comprehensive explanation with bullet points and examples.
-- **Bilingual Support:** Generate explanations in English or Chinese, regardless of the source text language.
-- **Local History & Caching:** Instantly retrieve recent explanations without re-requesting the API.
-- **Usage Statistics:** Keep track of your local API requests and estimated token usage.
+- **Built-in AI by default:** install and start immediately, with 50 free
+  explanations each day.
+- **No API key required:** provider setup and model names stay out of the normal
+  user experience.
+- **Concise or detailed:** choose a quick three-sentence explanation or a fuller
+  breakdown with an example.
+- **Privacy-aware site access:** the selection button runs only after you invoke
+  the extension, or on sites you explicitly add under **Enabled sites**.
+- **Optional local history:** recent explanations and cache can be disabled and
+  cleared from Settings.
+- **Power-user BYOK:** OpenAI, Gemini, and DeepSeek keys remain available in the
+  Advanced section for higher limits or direct provider control.
 
-## Getting Started
+## Getting started
 
-1. Install the extension in your browser.
-2. Click the extension icon or use the gear icon in the popup to open **Settings**.
-3. Select your preferred AI Provider and enter your API Key.
-   - *DeepSeek API Key (sk-...)*
-   - *Gemini API Key (AIza...)*
-   - *OpenAI API Key (sk-...)*
-4. Save the key and you are ready to go!
+1. Install the extension.
+2. Choose your language and explanation style.
+3. Highlight text on a webpage.
+4. Click the extension once on that tab, or press `Ctrl+E` / `Cmd+E`, then use
+   **Explain this**.
 
-## How to Use
+No account or API key is needed. The free allowance resets daily. After 50
+explanations, you can return the next day or add your own API key in
+**Settings → Advanced / Power User**.
 
-1. **Highlight Text:** Select any text on a webpage.
-2. **Click the Button:** A sleek floating button will appear near your cursor. Click it to trigger the AI.
-3. **Alternatively, use Hotkeys:** Press `Ctrl+E` (Windows/Linux) or `Cmd+E` (Mac).
-4. **Manual Entry:** You can also click the extension icon in your toolbar to manually type or paste text into the popup.
+## Site access
 
-## Privacy First
+Explain This does not install a content script on every website.
 
-Your privacy is paramount. "Explain This" only sends the text you explicitly select to the AI provider you configure. We do not track your browsing history or store your API keys on external servers (all keys are stored locally in your browser).
+- Clicking the toolbar action or using the keyboard shortcut grants temporary
+  access to the active tab.
+- Add a domain under **Settings → Enabled sites** only if you want the selection
+  button to be available automatically there.
+- Remove a site at any time to revoke its optional browser permission.
 
----
-*Built with React, Vite, and modern web standards.*
+**Only works where you allow it.**
+
+## Free-mode architecture
+
+```text
+Chrome extension → Explain This backend → AI provider
+```
+
+The extension never contains the free-mode provider key. The backend:
+
+- holds provider credentials as deployment secrets;
+- enforces 50 requests per day;
+- limits per-minute bursts and applies automatic cooldowns;
+- rejects free-mode selections over 1,000 characters;
+- applies a broader network abuse backstop;
+- returns provider-neutral errors and streaming responses; and
+- does not persist selected text in the application database.
+
+The deployable Cloudflare Worker lives in [`backend`](backend/README.md). Before a
+production build, deploy it and set `VITE_BUILT_IN_API_BASE_URL` if the API is not
+served from `https://api.explainthis.app/v1`.
+
+## Bring your own key
+
+BYOK is optional and lives under **Advanced / Power User**. A personal key is
+stored in `chrome.storage.local` and sent directly from the extension to the
+chosen provider. It is not sent to the Explain This backend.
+
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+Build the extension:
+
+```bash
+npm run build
+```
+
+Then load the generated `dist` directory as an unpacked extension in Chrome.
+
+## Privacy
+
+Only text you explicitly submit for explanation is processed. See the
+[Privacy Policy](privacy-policy.md) for free-mode routing, anonymous quota data,
+retention, local history controls, BYOK behavior, and third-party boundaries.
+
+Built with React, Vite, and modern Chrome extension APIs.
