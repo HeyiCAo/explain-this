@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import '../settingStyle.css'
 import { formatTokenCount, getUsageStats, normalizeUsageStats } from '../shared/usageStats'
 
@@ -420,6 +420,9 @@ function SettingsPage() {
     const [usageStats, setUsageStats] = useState(normalizeUsageStats());
     const [freeUsage, setFreeUsage] = useState(null);
     const [onboardingRequired, setOnboardingRequired] = useState(null);
+    const [providerMenuOpen, setProviderMenuOpen] = useState(false);
+    const advancedPanelRef = useRef(null);
+    const providerMenuRef = useRef(null);
 
     const t = copy[lang];
     const selectedProvider = useMemo(
@@ -486,6 +489,17 @@ function SettingsPage() {
         return () => chrome.storage.onChanged.removeListener(handleStorageChange);
     }, []);
 
+    useEffect(() => {
+        if (!providerMenuOpen) return undefined;
+        const handleOutsidePointer = (event) => {
+            if (!providerMenuRef.current?.contains(event.target)) {
+                setProviderMenuOpen(false);
+            }
+        };
+        document.addEventListener('pointerdown', handleOutsidePointer);
+        return () => document.removeEventListener('pointerdown', handleOutsidePointer);
+    }, [providerMenuOpen]);
+
     const currentFreeUsage = freeUsage?.date === new Date().toISOString().slice(0, 10)
         ? freeUsage
         : { limit: 50, remaining: 50 };
@@ -497,13 +511,24 @@ function SettingsPage() {
         const config = providers.find((item) => item.id === nextProvider) || providers[0];
         setProvider(nextProvider);
         setApiKey(savedKeys[config.storageKey] || '');
+        setProviderMenuOpen(false);
         setKeyStatus({ message: '', type: '' });
         setStorage({ provider: nextProvider });
     };
 
-    const handleModeChange = async (nextMode) => {
+    const handleModeChange = (nextMode) => {
         setAiMode(nextMode);
-        await setStorage({ aiMode: nextMode });
+        void setStorage({ aiMode: nextMode });
+        if (nextMode !== 'byok' || !advancedPanelRef.current) return;
+
+        advancedPanelRef.current.open = true;
+        requestAnimationFrame(() => {
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            advancedPanelRef.current?.scrollIntoView({
+                behavior: reduceMotion ? 'auto' : 'smooth',
+                block: 'start',
+            });
+        });
     };
 
     const handleSaveRecentChange = async (enabled) => {
@@ -764,19 +789,54 @@ function SettingsPage() {
                     </div>
                 </Section>
 
-                <details className="advanced-panel">
+                <details className="advanced-panel" ref={advancedPanelRef}>
                     <summary>{t.advanced}</summary>
                     <div className="advanced-content">
                         <p>{t.advancedIntro}</p>
                         <div className="advanced-form-grid">
-                            <label>
-                                <span>{t.provider}</span>
-                                <select value={provider} onChange={(event) => handleProviderChange(event.target.value)}>
-                                    {providers.map((item) => (
-                                        <option value={item.id} key={item.id}>{item.name}</option>
-                                    ))}
-                                </select>
-                            </label>
+                            <div className="advanced-field">
+                                <span className="advanced-field-label">{t.provider}</span>
+                                <div className="custom-provider-select" ref={providerMenuRef}>
+                                    <button
+                                        type="button"
+                                        className="custom-provider-trigger"
+                                        aria-haspopup="listbox"
+                                        aria-expanded={providerMenuOpen}
+                                        onClick={() => setProviderMenuOpen((current) => !current)}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Escape') setProviderMenuOpen(false);
+                                        }}
+                                    >
+                                        <span className={`custom-provider-mark ${selectedProvider.id}`}>
+                                            {selectedProvider.name.charAt(0)}
+                                        </span>
+                                        <span>{selectedProvider.name}</span>
+                                        <span className="custom-provider-chevron" aria-hidden="true">⌄</span>
+                                    </button>
+                                    {providerMenuOpen && (
+                                        <div className="custom-provider-menu" role="listbox">
+                                            {providers.map((item) => (
+                                                <button
+                                                    type="button"
+                                                    role="option"
+                                                    aria-selected={provider === item.id}
+                                                    className={`custom-provider-option ${provider === item.id ? 'selected' : ''}`}
+                                                    onClick={() => handleProviderChange(item.id)}
+                                                    key={item.id}
+                                                >
+                                                    <span className={`custom-provider-mark ${item.id}`}>
+                                                        {item.name.charAt(0)}
+                                                    </span>
+                                                    <span>{item.name}</span>
+                                                    {provider === item.id && (
+                                                        <span className="custom-provider-check" aria-hidden="true">✓</span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                             <label>
                                 <span>{t.apiKey}</span>
                                 <input
