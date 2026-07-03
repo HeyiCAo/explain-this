@@ -2,6 +2,7 @@ class TextSelector {
   constructor() {
     this.selectedText = '';
     this.floatingButton = null;
+    this.dismissTimer = null;
     this.init();
   }
 
@@ -29,12 +30,13 @@ class TextSelector {
   }
 
   showFloatingButton(event) {
-    this.removeFloatingButton();
+    this.removeFloatingButton(true);
     const shortcutLabel = /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? 'Cmd+E' : 'Ctrl+E';
 
     this.floatingButton = document.createElement('div');
+    this.floatingButton.className = 'explain-this-floating-btn';
     this.floatingButton.innerHTML = `
-      <div style="
+      <div class="explain-this-floating-surface" style="
         background: linear-gradient(135deg, #4da3ff, #0066cc);
         color: white;
         padding: 10px 16px;
@@ -52,9 +54,9 @@ class TextSelector {
         opacity: 0;
         transform: translateY(10px);
       ">
-        <span style="font-size: 16px;">🤔</span>
-        <span>What does this mean?</span>
-        <span style="
+        <span class="explain-this-floating-icon" style="font-size: 16px;">🤔</span>
+        <span class="explain-this-floating-label">What does this mean?</span>
+        <span class="explain-this-shortcut" style="
           font-size: 12px;
           opacity: 0.9;
           background: rgba(255,255,255,0.2);
@@ -99,14 +101,30 @@ class TextSelector {
 
     document.body.appendChild(this.floatingButton);
 
-    setTimeout(() => this.removeFloatingButton(), 8000);
+    this.dismissTimer = setTimeout(() => this.removeFloatingButton(), 8000);
   }
 
-  removeFloatingButton() {
-    if (this.floatingButton && this.floatingButton.parentNode) {
-      this.floatingButton.remove();
-      this.floatingButton = null;
+  removeFloatingButton(immediate = false) {
+    if (this.dismissTimer) {
+      clearTimeout(this.dismissTimer);
+      this.dismissTimer = null;
     }
+    if (!this.floatingButton || !this.floatingButton.parentNode) return;
+
+    const button = this.floatingButton;
+    this.floatingButton = null;
+    if (immediate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      button.remove();
+      return;
+    }
+
+    button.classList.add('is-leaving');
+    const surface = button.querySelector('.explain-this-floating-surface');
+    if (surface) {
+      surface.style.opacity = '0';
+      surface.style.transform = 'translateY(6px) scale(0.96)';
+    }
+    setTimeout(() => button.remove(), 180);
   }
 
   sendToPopup() {
@@ -116,6 +134,11 @@ class TextSelector {
     }
 
     const text = this.selectedText;
+    const pendingExplanation = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      text,
+      createdAt: Date.now()
+    };
     const hasChrome = typeof chrome !== 'undefined';
     if (!hasChrome) {
       console.warn('⚠️ Chrome API 不可用，无法发送到扩展');
@@ -132,6 +155,7 @@ class TextSelector {
       const canStore = chrome.storage?.local?.set;
       if (canStore) {
         chrome.storage.local.set({
+          pendingExplanation,
           lastSelectedText: text,
           shouldAutoFill: true
         }, () => {
@@ -148,7 +172,7 @@ class TextSelector {
         });
       } else {
         console.warn('⚠️ storage.local不可用，改由background处理');
-        chrome.runtime?.sendMessage({ action: 'storeSelection', text }, () => {
+        chrome.runtime?.sendMessage({ action: 'storeSelection', text, pendingExplanation }, () => {
           if (chrome.runtime.lastError) {
             console.warn('background不可用，无法存储选区', chrome.runtime.lastError);
             openFallbackWindow();

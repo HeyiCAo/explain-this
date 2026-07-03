@@ -255,8 +255,10 @@ function Popup() {
   const [historyList, setHistoryList] = useState([]);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [onboardingRequired, setOnboardingRequired] = useState(null);
+  const [pendingSelection, setPendingSelection] = useState(null);
 
   const langWrapRef = useRef(null);
+  const processedSelectionIdsRef = useRef(new Set());
   const aiServiceRef = useRef(new AIService());
   const { getCache, upsertCache } = useSimpleCache();
   const t = language === 'zh' ? popupZh : popupEn;
@@ -267,6 +269,7 @@ function Popup() {
       'lang',
       'explainSpeed',
       'history',
+      'pendingExplanation',
       'lastSelectedText',
       'shouldAutoFill',
       'onboardingComplete',
@@ -275,19 +278,15 @@ function Popup() {
       'geminiApiKey',
       'openaiApiKey'
     ]).then(result => {
-      let currentLang = language;
-      let currentSpeed = speed;
       const hasSavedKey = [result.apiKey, result.geminiApiKey, result.openaiApiKey]
         .some(key => String(key || '').trim());
       const setupComplete = result.onboardingComplete === true || hasSavedKey;
       
       if (result.lang) {
         setLanguage(result.lang);
-        currentLang = result.lang;
       }
       if (result.explainSpeed) {
         setSpeed(result.explainSpeed);
-        currentSpeed = result.explainSpeed;
       }
       if (result.history) setHistoryList(result.history);
 
@@ -300,44 +299,40 @@ function Popup() {
         return;
       }
       setOnboardingRequired(!setupComplete);
-      
-      if (setupComplete && result.shouldAutoFill && result.lastSelectedText) {
-        const text = result.lastSelectedText;
-        setInputText(text);
-        // 直接使用从存储读取的值，避免依赖尚未更新的 state
-        setLoading(true);
-        setShowResult(true);
-        setResult({ type: 'streaming', text: '' });
-        
-        aiServiceRef.current.explainTextStream(text, { language: currentLang, speed: currentSpeed }, (chunk) => {
-          setResult(prev => ({
-            type: 'streaming',
-            text: (prev.text || '') + chunk
-          }));
-        }).then(html => {
-          setResult({ type: 'success', html });
-          // 注意：由于 explainText 也是异步的且依赖于 recordUsage/upsertCache，
-          // 这里我们可能需要稍微重构或直接在这里调用相关逻辑
-          recordUsage({ inputText: text, outputText: html.replace(/<[^>]+>/g, '') });
-          upsertCache(text, html, currentLang, currentSpeed);
-          
-          setHistoryList((currentHistory) => {
-            const newHistory = [
-              { key: text, text: text.substring(0, 50), timestamp: new Date().toLocaleString(), language: currentLang, speed: currentSpeed },
-              ...currentHistory.filter(h => h.key !== text)
-            ].slice(0, 10);
-            setStorage({ history: newHistory });
-            return newHistory;
-          });
-        }).catch(error => {
-          const t_local = currentLang === 'zh' ? popupZh : popupEn;
-          setResult({ type: 'error', message: `${t_local.api_error_prefix}${error.message}` });
-        }).finally(() => {
-          setLoading(false);
-          setStorage({ shouldAutoFill: false, lastSelectedText: '' });
+
+      if (result.pendingExplanation?.text) {
+        setPendingSelection(result.pendingExplanation);
+      } else if (result.shouldAutoFill && result.lastSelectedText) {
+        setPendingSelection({
+          id: `legacy:${result.lastSelectedText}`,
+          text: result.lastSelectedText
         });
       }
     });
+  }, []);
+
+  // popup window 被复用时也要接收新的划词请求
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome?.storage?.onChanged) return undefined;
+    const handleStorageChange = (changes, areaName) => {
+      if (areaName !== 'local') return;
+      const request = changes.pendingExplanation?.newValue;
+      if (request?.text) {
+        setPendingSelection(request);
+        return;
+      }
+      if (changes.shouldAutoFill?.newValue === true) {
+        getStorage(['lastSelectedText']).then(result => {
+          if (!result.lastSelectedText) return;
+          setPendingSelection({
+            id: `legacy:${result.lastSelectedText}`,
+            text: result.lastSelectedText
+          });
+        });
+      }
+    };
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
   // 语言菜单点击外部关闭
@@ -403,6 +398,26 @@ function Popup() {
   const handleSubmit = useCallback(() => {
     explainText(inputText);
   }, [inputText, explainText]);
+
+  // 消费一次划词请求；先清除持久化标记，避免 popup 重开后重复解释
+  useEffect(() => {
+    if (onboardingRequired !== false || !pendingSelection?.text) return;
+    const text = String(pendingSelection.text).trim();
+    if (!text) return;
+
+    const requestId = pendingSelection.id || `legacy:${text}`;
+    if (processedSelectionIdsRef.current.has(requestId)) return;
+    processedSelectionIdsRef.current.add(requestId);
+
+    setPendingSelection(null);
+    setInputText(text);
+    setStorage({
+      pendingExplanation: null,
+      shouldAutoFill: false,
+      lastSelectedText: ''
+    });
+    explainText(text);
+  }, [onboardingRequired, pendingSelection, explainText]);
 
   // ========== 渲染 ==========
   if (onboardingRequired === null) {

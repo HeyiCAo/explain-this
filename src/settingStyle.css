@@ -4,6 +4,7 @@ html {
         }
         body {
             min-height: 100vh;
+            box-sizing: border-box;
             padding: 24px;
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -985,5 +986,243 @@ html {
         border-color: #7a2e35;
         background: #4a1e22;
         color: #ef9a9a;
+    }
+}
+
+/* Motion system */
+@keyframes settings-page-enter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes settings-card-enter {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes settings-step-enter {
+    from { opacity: 0; transform: translateX(12px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes settings-item-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes settings-menu-enter {
+    from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes settings-progress-fill {
+    from { opacity: 0.35; transform: scaleX(0); }
+    to { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes settings-choice-pop {
+    0% { transform: scale(0.985); }
+    60% { transform: scale(1.012); }
+    100% { transform: scale(1); }
+}
+
+@keyframes settings-radio-pop {
+    0% { transform: scale(0.5); }
+    65% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+@keyframes settings-status-enter {
+    from { opacity: 0; transform: translateY(-5px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.top-bar {
+    animation: settings-page-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.section-grid > .section,
+.section-grid > .right-column {
+    animation: settings-card-enter 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.section-grid > .right-column {
+    animation-delay: 70ms;
+}
+
+.right-column > .section {
+    animation: settings-item-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.right-column > .section:nth-child(2) {
+    animation-delay: 80ms;
+}
+
+.settings-onboarding-card {
+    animation: settings-card-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.settings-onboarding-page {
+    animation: settings-step-enter 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.settings-onboarding-page > * {
+    animation: settings-item-enter 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.settings-onboarding-page > *:nth-child(2) { animation-delay: 40ms; }
+.settings-onboarding-page > *:nth-child(3) { animation-delay: 80ms; }
+.settings-onboarding-page > *:nth-child(4) { animation-delay: 120ms; }
+.settings-onboarding-page > *:nth-child(5) { animation-delay: 160ms; }
+.settings-onboarding-page > *:nth-child(6) { animation-delay: 200ms; }
+
+.settings-onboarding-progress span {
+    transform-origin: left center;
+}
+
+.settings-onboarding-progress span.active {
+    animation: settings-progress-fill 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.settings-choice {
+    transition:
+        transform 180ms ease,
+        box-shadow 180ms ease,
+        border-color 180ms ease,
+        background-color 180ms ease;
+}
+
+.settings-choice:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(45, 73, 120, 0.11);
+}
+
+.settings-choice:active {
+    transform: scale(0.98);
+}
+
+.settings-choice.selected {
+    animation: settings-choice-pop 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.settings-choice.selected .settings-choice-radio {
+    animation: settings-radio-pop 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.settings-choice-icon,
+.settings-onboarding-icon {
+    transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.settings-choice:hover .settings-choice-icon,
+.settings-onboarding-icon:hover {
+    transform: rotate(-4deg) scale(1.06);
+    box-shadow: 0 8px 18px rgba(77, 133, 224, 0.15);
+}
+
+.settings-onboarding-actions button,
+.button-group button,
+.close-btn,
+.guide-link {
+    transition:
+        transform 170ms ease,
+        box-shadow 170ms ease,
+        background-color 170ms ease,
+        border-color 170ms ease;
+}
+
+.settings-onboarding-actions button:hover,
+.button-group button:hover,
+.close-btn:hover,
+.guide-link:hover {
+    transform: translateY(-2px);
+}
+
+.settings-onboarding-actions button:active,
+.button-group button:active,
+.close-btn:active {
+    transform: scale(0.97);
+}
+
+.settings-onboarding-primary:hover,
+.primary-btn:hover {
+    box-shadow: 0 8px 18px rgba(37, 130, 228, 0.24);
+}
+
+.provider-menu.open {
+    transform-origin: top center;
+    animation: settings-menu-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.provider-item {
+    transition: transform 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.provider-item:hover {
+    transform: translateX(3px);
+}
+
+.provider-toggle span {
+    display: inline-block;
+    transition: transform 180ms ease;
+}
+
+.provider-wrap:has(.provider-menu.open) .provider-toggle span {
+    transform: rotate(180deg);
+}
+
+.status.success,
+.status.error,
+.status.info,
+.settings-onboarding-status {
+    animation: settings-status-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.info-box,
+.stat-item {
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.info-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(32, 72, 120, 0.08);
+}
+
+.stat-item:hover {
+    transform: translateX(3px);
+}
+
+input[type="password"] {
+    transition:
+        transform 180ms ease,
+        border-color 200ms ease,
+        box-shadow 200ms ease;
+}
+
+input[type="password"]:focus {
+    transform: translateY(-1px);
+}
+
+.lang-switch button {
+    transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.lang-switch button:hover {
+    transform: translateY(-1px);
+}
+
+.lang-switch button.active {
+    animation: settings-radio-pop 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
     }
 }

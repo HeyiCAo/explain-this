@@ -27,6 +27,23 @@ function openExplainPopup(sendResponse) {
   }
 }
 
+function createPendingExplanation(text, request) {
+  if (request?.id && request?.text) return request;
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    text,
+    createdAt: Date.now()
+  };
+}
+
+function storeSelection(text, request, callback) {
+  chrome.storage.local.set({
+    pendingExplanation: createPendingExplanation(text, request),
+    lastSelectedText: text,
+    shouldAutoFill: true
+  }, callback);
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   void sender;
   if (message.action === 'openPopup') {
@@ -35,10 +52,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   if (message.action === 'storeSelection') {
     const text = message.text || '';
-    chrome.storage.local.set({
-      lastSelectedText: text,
-      shouldAutoFill: true
-    }, () => {
+    storeSelection(text, message.pendingExplanation, () => {
       openExplainPopup(sendResponse);
     });
     return true;
@@ -56,10 +70,7 @@ chrome.commands.onCommand.addListener((command) => {
           return;
         }
         if (response && response.text) {
-          chrome.storage.local.set({
-          lastSelectedText: response.text,
-          shouldAutoFill: true
-        }, () => {
+          storeSelection(response.text, null, () => {
             openExplainPopup(() => {});
           });
         }

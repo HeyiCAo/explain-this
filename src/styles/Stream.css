@@ -17,8 +17,13 @@
   margin-left: 2px;
   color: #667eea;
   font-weight: bold;
-  animation: none;
+  animation: stream-cursor-blink 0.9s steps(2, jump-none) infinite;
   transition: opacity 0.1s;
+}
+
+@keyframes stream-cursor-blink {
+  0%, 45% { opacity: 1; transform: translateY(0); }
+  50%, 100% { opacity: 0.2; transform: translateY(1px); }
 }
 
 /* 加载动画 */
@@ -69,6 +74,20 @@
   background: #fff5f5;
   border-radius: 8px;
   border-left: 3px solid #e53e3e;
+  animation: stream-error-in 220ms ease-out both;
+}
+
+@keyframes stream-error-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stream-cursor,
+  .loading-dots span,
+  .stream-error {
+    animation: none !important;
+  }
 }
 
 /* 滚动条样式 */
