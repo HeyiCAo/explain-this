@@ -17,6 +17,19 @@ const setStorage = (values) => new Promise(resolve => {
     }
     chrome.storage.local.set(values, resolve);
 });
+const removeStorage = (keys) => new Promise(resolve => {
+    if (!hasExtensionStorage()) {
+        resolve();
+        return;
+    }
+    chrome.storage.local.remove(keys, resolve);
+});
+
+const providerStorageKeys = {
+    deepseek: 'apiKey',
+    gemini: 'geminiApiKey',
+    openai: 'openaiApiKey'
+};
 
 const settingsZh = {
       settings: '设置',
@@ -50,7 +63,10 @@ const settingsZh = {
       openaiKeyLabel: 'OpenAI API Key：',
       openaiKeyPlaceholder: 'sk-...',
       saveKey: '保存密钥',
+      clearKey: '清除密钥',
+      clearKeyConfirm: '确定要清除已保存的 {provider} API Key 吗？',
       testConnection: '测试连接',
+      githubRepository: 'GitHub 项目',
       usageStats: '使用统计',
       todayUsage: '今日使用：',
       totalUsage: '累计使用：',
@@ -63,6 +79,7 @@ const settingsZh = {
       status_invalid_key: '密钥格式无效',
       status_testing: '正在测试连接...',
       status_success: '连接成功！',
+      status_key_cleared: '已清除 {provider} API Key。',
       status_invalid_retry: '密钥无效，请重试',
       status_conn_failed: '连接失败',
       mouseClick: '点击弹窗',
@@ -100,7 +117,10 @@ const settingsEn = {
       openaiKeyLabel: 'OpenAI API Key:',
       openaiKeyPlaceholder: 'sk-...',
       saveKey: 'Save Key',
+      clearKey: 'Clear Key',
+      clearKeyConfirm: 'Clear the saved {provider} API Key?',
       testConnection: 'Test Connection',
+      githubRepository: 'GitHub Repository',
       usageStats: 'Usage Statistics',
       todayUsage: 'Today:',
       totalUsage: 'Total:',
@@ -113,6 +133,7 @@ const settingsEn = {
       status_invalid_key: 'Invalid API key format',
       status_testing: 'Testing connection...',
       status_success: 'Success!',
+      status_key_cleared: '{provider} API Key cleared.',
       status_invalid_retry: 'Invalid API key. Try again.',
       status_conn_failed: 'Connection failed',
       mouseClick: 'Click',
@@ -213,7 +234,6 @@ const onboardingProviders = [
         name: 'OpenAI',
         descriptionKey: 'providerOpenAI',
         keyUrl: 'https://platform.openai.com/api-keys',
-        recommended: true,
         storageKey: 'openaiApiKey'
     },
     {
@@ -221,6 +241,7 @@ const onboardingProviders = [
         name: 'Gemini',
         descriptionKey: 'providerGemini',
         keyUrl: 'https://aistudio.google.com/app/apikey',
+        recommended: true,
         freeAvailable: true,
         storageKey: 'geminiApiKey'
     },
@@ -590,6 +611,7 @@ function SettingsPage() {
     const t = lang === 'zh' ? settingsZh : settingsEn;
     const shortcutModifier = isMacPlatform() ? 'Cmd' : 'Ctrl';
     const privacyUrl = 'https://github.com/HeyiCAo/ExplainThis/blob/main/privacy-policy.md';
+    const repositoryUrl = 'https://github.com/HeyiCAo/ExplainThis';
 
     useEffect(() => {
       getStorage([
@@ -684,7 +706,26 @@ function SettingsPage() {
         
         setStorage(keyPayload);
         setApiKey(normalizedKey);
+        setSavedKeys(current => ({
+            ...current,
+            [providerStorageKeys[provider]]: normalizedKey
+        }));
         setStatus({ message: t.status_success, type: 'success' });
+    }
+
+    async function handleClearKey() {
+        const providerName = onboardingProviders.find(option => option.id === provider)?.name || provider;
+        const confirmMessage = formatOnboardingText(t.clearKeyConfirm, { provider: providerName });
+        if (!window.confirm(confirmMessage)) return;
+
+        const storageKey = providerStorageKeys[provider];
+        await removeStorage(storageKey);
+        setApiKey('');
+        setSavedKeys(current => ({ ...current, [storageKey]: '' }));
+        setStatus({
+            message: formatOnboardingText(t.status_key_cleared, { provider: providerName }),
+            type: 'success'
+        });
     }
 
     async function handleTestConnection() {
@@ -784,6 +825,9 @@ function SettingsPage() {
             <span>{t.settings}</span>
           </h1>
           <div className="top-actions">
+            <a className="github-link" href={repositoryUrl} target="_blank" rel="noreferrer">
+              {t.githubRepository}<span aria-hidden="true">↗</span>
+            </a>
             <span className="lang-switch">
               <button type="button" onClick={() => { setLang('zh'); setStorage({ lang: 'zh' }); }}
                   className={lang === 'zh' ? 'active' : ''}>中</button>
@@ -880,6 +924,7 @@ function SettingsPage() {
               <button className="primary-btn" onClick={handleSaveKey}>{t.saveKey}</button>
               <button className="secondary-btn"
               onClick={handleTestConnection}>{t.testConnection}</button>
+              <button className="danger-btn" onClick={handleClearKey}>{t.clearKey}</button>
             </div>
 
             <div className={`status ${status.type}`}>{status.message}</div>

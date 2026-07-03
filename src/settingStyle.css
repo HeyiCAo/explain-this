@@ -67,6 +67,26 @@ html {
             gap: 10px;
         }
 
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            border: 1px solid #d6dbe3;
+            border-radius: 999px;
+            background: #ffffff;
+            color: #2f3542;
+            font-size: 12px;
+            font-weight: 650;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .github-link:hover {
+            border-color: #b9c1cf;
+            background: #f2f5fa;
+        }
+
         .close-btn {
             padding: 8px 14px;
             border-radius: 999px;
@@ -232,6 +252,17 @@ html {
 
         .secondary-btn:hover {
             background: #dee2e6;
+        }
+
+        .danger-btn {
+            border: 1px solid #f0c5c8;
+            background: #fff3f3;
+            color: #b3262e;
+        }
+
+        .danger-btn:hover {
+            border-color: #e49aa0;
+            background: #ffe7e8;
         }
 
         .status {
@@ -758,6 +789,35 @@ html {
             .settings-onboarding-actions.key-actions {
                 grid-template-columns: 1fr;
             }
+
+            .top-bar,
+            .top-actions {
+                align-items: stretch;
+            }
+
+            .top-bar {
+                flex-direction: column;
+            }
+
+            .top-actions {
+                flex-wrap: wrap;
+            }
+
+            .section-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .right-column {
+                grid-template-rows: auto;
+            }
+
+            .button-group {
+                flex-wrap: wrap;
+            }
+
+            .button-group button {
+                min-width: 130px;
+            }
         }
 
         /* =========================================
@@ -792,6 +852,12 @@ html {
     }
 
     .close-btn {
+        background: #262c3f;
+        border-color: #3a4055;
+        color: #e6ebf5;
+    }
+
+    .github-link {
         background: #262c3f;
         border-color: #3a4055;
         color: #e6ebf5;
@@ -842,6 +908,17 @@ html {
 
     .secondary-btn:hover {
         background: #444444;
+    }
+
+    .danger-btn {
+        border-color: #6f3b42;
+        background: #3d252d;
+        color: #ffb4ba;
+    }
+
+    .danger-btn:hover {
+        border-color: #91505a;
+        background: #4c2b34;
     }
 
     /* 提示框调整为深蓝色调 */
