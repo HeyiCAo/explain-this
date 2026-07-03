@@ -339,6 +339,426 @@ html {
             justify-content: flex-end;
             margin-top: 0;
         }
+
+        .settings-initializing {
+            min-height: calc(100vh - 48px);
+        }
+
+        .settings-onboarding-shell {
+            min-height: calc(100vh - 48px);
+            display: grid;
+            place-items: center;
+        }
+
+        .settings-onboarding-card {
+            width: min(760px, 100%);
+            min-height: 540px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            padding: 28px;
+            border: 1px solid #e0e5ed;
+            border-radius: 22px;
+            background:
+                radial-gradient(circle at 100% 0%, rgba(77, 163, 255, 0.12), transparent 40%),
+                #ffffff;
+            box-shadow: 0 16px 48px rgba(36, 54, 83, 0.12);
+        }
+
+        .settings-onboarding-topline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            color: #7c879a;
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+        .settings-onboarding-topline span:first-child {
+            color: #3563d9;
+            font-weight: 750;
+        }
+
+        .settings-onboarding-progress {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 7px;
+            margin: 12px 0 26px;
+        }
+
+        .settings-onboarding-progress span {
+            height: 5px;
+            border-radius: 999px;
+            background: #e4e9f1;
+        }
+
+        .settings-onboarding-progress span.active {
+            background: linear-gradient(90deg, #4da3ff, #3563d9);
+        }
+
+        .settings-onboarding-page {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .settings-onboarding-page.compact {
+            gap: 12px;
+        }
+
+        .settings-onboarding-page h1 {
+            margin: 0;
+            color: #202b3d;
+            font-size: 28px;
+            line-height: 1.25;
+            letter-spacing: -0.025em;
+        }
+
+        .settings-onboarding-intro {
+            max-width: 620px;
+            margin: 8px 0 0;
+            color: #687287;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .settings-onboarding-icon {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #e8f2ff, #dbe8ff);
+            color: #3563d9;
+            font-size: 17px;
+            font-weight: 800;
+            box-shadow: inset 0 0 0 1px rgba(77, 128, 220, 0.12);
+        }
+
+        .settings-onboarding-icon.notice {
+            background: linear-gradient(135deg, #fff4d9, #ffe6ad);
+            color: #976000;
+            font-size: 22px;
+        }
+
+        .settings-onboarding-icon.openai,
+        .settings-choice-icon.openai {
+            background: #e7f4ef;
+            color: #13664e;
+        }
+
+        .settings-onboarding-icon.gemini,
+        .settings-choice-icon.gemini {
+            background: #eee9ff;
+            color: #6044be;
+        }
+
+        .settings-onboarding-icon.deepseek,
+        .settings-choice-icon.deepseek {
+            background: #e6efff;
+            color: #315fc6;
+        }
+
+        .settings-choice-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .settings-choice-grid.speed-choices {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .settings-choice-grid.provider-choices {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .settings-choice {
+            min-height: 88px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 13px;
+            padding: 14px;
+            border: 1px solid #dfe5ef;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.88);
+            color: #283449;
+            box-shadow: none;
+            text-align: left;
+        }
+
+        .settings-choice:hover {
+            border-color: #a9c6f8;
+            background: #f7faff;
+        }
+
+        .settings-choice.selected {
+            border-color: #6d9eea;
+            background: #f1f6ff;
+            box-shadow: 0 0 0 3px rgba(77, 133, 224, 0.10);
+        }
+
+        .settings-choice-icon {
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: #edf2fa;
+            color: #52627d;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .settings-choice strong {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 7px;
+            color: #253146;
+            font-size: 15px;
+        }
+
+        .settings-choice small {
+            display: block;
+            margin-top: 4px;
+            color: #7b8598;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .settings-choice em {
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: #dce9ff;
+            color: #3563d9;
+            font-size: 9px;
+            font-style: normal;
+            font-weight: 750;
+        }
+
+        .settings-choice em.free {
+            background: #dcf3e8;
+            color: #197052;
+        }
+
+        .settings-choice-radio {
+            width: 17px;
+            height: 17px;
+            box-sizing: border-box;
+            border: 2px solid #bdc6d6;
+            border-radius: 50%;
+        }
+
+        .settings-choice.selected .settings-choice-radio {
+            border: 5px solid #4d83dc;
+            background: #ffffff;
+        }
+
+        .settings-principle-box {
+            padding: 13px 15px;
+            border: 1px solid #d8e5fa;
+            border-radius: 14px;
+            background: #f1f6ff;
+            color: #58667e;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .settings-principle-box strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #2f4f84;
+            font-size: 13px;
+        }
+
+        .settings-principle-box p {
+            margin: 0;
+        }
+
+        .settings-principle-box .analogy {
+            margin-top: 5px;
+            color: #3f5f91;
+        }
+
+        .settings-notice-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .settings-notice-list > div {
+            display: grid;
+            grid-template-columns: 30px 1fr;
+            gap: 10px;
+            padding: 13px;
+            border: 1px solid #e4e8ef;
+            border-radius: 14px;
+            background: #ffffff;
+        }
+
+        .settings-notice-list > div > span {
+            width: 30px;
+            height: 30px;
+            display: grid;
+            place-items: center;
+            border-radius: 9px;
+            background: #edf3ff;
+            color: #3563d9;
+            font-weight: 800;
+        }
+
+        .settings-notice-list p {
+            margin: 0;
+            color: #687287;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .settings-notice-list strong {
+            display: block;
+            margin-bottom: 2px;
+            color: #2e3a50;
+            font-size: 12px;
+        }
+
+        .settings-local-key-note {
+            margin: 0;
+            padding: 10px 12px;
+            border-radius: 11px;
+            background: #eef7f3;
+            color: #28644f;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .settings-onboarding-link {
+            width: fit-content;
+            color: #3563d9;
+            font-size: 12px;
+            font-weight: 650;
+            text-decoration: none;
+        }
+
+        .settings-onboarding-link:hover {
+            text-decoration: underline;
+        }
+
+        .settings-onboarding-key {
+            margin: 0;
+            color: #364158;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .settings-onboarding-key input[type="password"] {
+            margin: 8px 0 0;
+            border-width: 1px;
+            border-color: #d9e0eb;
+            border-radius: 12px;
+            background: #ffffff;
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .settings-key-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .settings-key-meta > span {
+            color: #7b8598;
+            font-size: 11px;
+        }
+
+        .settings-onboarding-status {
+            padding: 10px 12px;
+            border-radius: 11px;
+            font-size: 12px;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .settings-onboarding-status.success {
+            border: 1px solid #cce7db;
+            background: #edf8f3;
+            color: #206248;
+        }
+
+        .settings-onboarding-status.error {
+            border: 1px solid #ffd4d4;
+            background: #fff1f1;
+            color: #9f1d1d;
+        }
+
+        .settings-onboarding-actions {
+            display: grid;
+            grid-template-columns: auto minmax(180px, 1fr);
+            gap: 10px;
+            margin-top: auto;
+            padding-top: 4px;
+        }
+
+        .settings-onboarding-actions.single {
+            grid-template-columns: 1fr;
+        }
+
+        .settings-onboarding-actions.key-actions {
+            grid-template-columns: auto auto minmax(190px, 1fr);
+        }
+
+        .settings-onboarding-actions button {
+            min-height: 44px;
+            padding: 11px 18px;
+            border-radius: 12px;
+        }
+
+        .settings-onboarding-actions button:disabled {
+            cursor: wait;
+            opacity: 0.65;
+        }
+
+        .settings-onboarding-primary {
+            background: linear-gradient(135deg, #4da3ff, #3563d9);
+            color: #ffffff;
+        }
+
+        .settings-onboarding-secondary {
+            border: 1px solid #dce3ee;
+            background: #f2f5f9;
+            color: #536077;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 14px;
+            }
+
+            .settings-onboarding-shell {
+                min-height: calc(100vh - 28px);
+            }
+
+            .settings-onboarding-card {
+                min-height: calc(100vh - 28px);
+                padding: 20px;
+                border-radius: 18px;
+            }
+
+            .settings-choice-grid.speed-choices,
+            .settings-choice-grid.provider-choices,
+            .settings-notice-list {
+                grid-template-columns: 1fr;
+            }
+
+            .settings-onboarding-actions.key-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* =========================================
    深色模式 (Dark Mode) 自动适配
 ========================================= */
@@ -478,5 +898,92 @@ html {
         background: #1c3a45;
         border-color: #2a5c6e;
         color: #81d4fa;
+    }
+
+    .settings-onboarding-card {
+        border-color: #343d52;
+        background:
+            radial-gradient(circle at 100% 0%, rgba(77, 163, 255, 0.13), transparent 40%),
+            #252a3d;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+    }
+
+    .settings-onboarding-progress span {
+        background: #3a4256;
+    }
+
+    .settings-onboarding-page h1,
+    .settings-choice strong,
+    .settings-notice-list strong,
+    .settings-onboarding-key {
+        color: #f2f5fb;
+    }
+
+    .settings-onboarding-intro,
+    .settings-choice small,
+    .settings-notice-list p,
+    .settings-key-meta > span {
+        color: #a6b0c6;
+    }
+
+    .settings-choice,
+    .settings-notice-list > div {
+        border-color: #3a4358;
+        background: rgba(42, 48, 66, 0.86);
+    }
+
+    .settings-choice:hover,
+    .settings-choice.selected {
+        border-color: #5878ac;
+        background: #29344b;
+    }
+
+    .settings-choice-icon {
+        background: #343e54;
+        color: #d9e5fb;
+    }
+
+    .settings-choice.selected .settings-choice-radio {
+        background: #252a3d;
+    }
+
+    .settings-principle-box {
+        border-color: #3d5274;
+        background: #26344c;
+        color: #bdc9dc;
+    }
+
+    .settings-principle-box strong,
+    .settings-principle-box .analogy {
+        color: #cfe0ff;
+    }
+
+    .settings-local-key-note {
+        background: #213a35;
+        color: #9ed6c2;
+    }
+
+    .settings-onboarding-key input[type="password"] {
+        border-color: #414b61;
+        background: #1e1e1e;
+        color: #ffffff;
+    }
+
+    .settings-onboarding-secondary {
+        border-color: #414b61;
+        background: #30384c;
+        color: #dbe3f2;
+    }
+
+    .settings-onboarding-status.success {
+        border-color: #315e50;
+        background: #213a35;
+        color: #9ed6c2;
+    }
+
+    .settings-onboarding-status.error {
+        border-color: #7a2e35;
+        background: #4a1e22;
+        color: #ef9a9a;
     }
 }
