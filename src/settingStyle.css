@@ -1317,10 +1317,15 @@ input[type="password"]:focus {
     align-items: stretch;
 }
 
+.settings-layout > * {
+    min-width: 0;
+}
+
 .settings-layout .section {
     min-height: 0;
     height: 100%;
     box-sizing: border-box;
+    border: 1px solid #e3e8f0;
 }
 
 .hero-section {
@@ -1460,6 +1465,7 @@ input[type="password"]:focus {
     height: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, #4da3ff, #3563d9);
+    transition: width 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .quota-card small {
@@ -1532,6 +1538,11 @@ input[type="password"]:focus {
     height: 21px;
     flex: 0 0 auto;
     accent-color: #2582e4;
+    transition: transform 160ms ease;
+}
+
+.toggle-setting input:checked {
+    animation: settings-radio-pop 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .privacy-note {
@@ -1611,6 +1622,18 @@ input[type="text"]:focus {
     border-radius: 10px;
     color: #3c485d;
     font-size: 12px;
+    transition:
+        background-color 160ms ease,
+        border-color 160ms ease,
+        transform 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.site-row:hover {
+    border-color: #a9c6f8;
+    background: #f7faff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(45, 73, 120, 0.08);
 }
 
 .site-row > span {
@@ -1645,6 +1668,7 @@ input[type="text"]:focus {
 .advanced-panel {
     grid-column: 1 / -1;
     scroll-margin-top: 24px;
+    box-sizing: border-box;
     border: 1px solid #dfe4ec;
     border-radius: 16px;
     background: #ffffff;
@@ -1652,19 +1676,78 @@ input[type="text"]:focus {
 }
 
 .advanced-panel summary {
+    min-height: 58px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
     padding: 18px 20px;
-    color: #46536a;
-    font-size: 14px;
-    font-weight: 750;
+    list-style: none;
+    border-radius: 15px;
+    color: #444;
+    font-size: 16px;
+    font-weight: 600;
     cursor: pointer;
+    transition:
+        background-color 170ms ease,
+        color 170ms ease,
+        border-color 170ms ease;
+}
+
+.advanced-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+.advanced-panel summary::after {
+    content: "⌄";
+    flex: 0 0 auto;
+    color: #7d8799;
+    font-size: 18px;
+    line-height: 1;
+    transform: rotate(0);
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), color 170ms ease;
+}
+
+.advanced-panel summary:hover {
+    background: #f5f9ff;
+    color: #286fc8;
+}
+
+.advanced-panel summary:hover::after {
+    color: #4d8edb;
+}
+
+.advanced-panel summary:focus {
+    outline: none;
+}
+
+.advanced-panel summary:focus-visible {
+    box-shadow: inset 0 0 0 2px rgba(77, 142, 219, 0.72);
+}
+
+.advanced-panel[open] summary::after {
+    transform: rotate(180deg);
 }
 
 .advanced-panel[open] summary {
     border-bottom: 1px solid #edf0f4;
+    border-radius: 15px 15px 0 0;
+}
+
+.advanced-panel[open] summary:focus-visible {
+    box-shadow:
+        inset 2px 0 rgba(77, 142, 219, 0.72),
+        inset -2px 0 rgba(77, 142, 219, 0.72),
+        inset 0 2px rgba(77, 142, 219, 0.72);
 }
 
 .advanced-content {
     padding: 18px 20px 20px;
+}
+
+.advanced-panel[open] .advanced-content {
+    animation: settings-item-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .advanced-form-grid {
@@ -1682,9 +1765,12 @@ input[type="text"]:focus {
 .advanced-field-label {
     display: block;
     margin-bottom: 7px;
+    line-height: 20px;
 }
 
 .advanced-form-grid input[type="password"] {
+    min-height: 46px;
+    box-sizing: border-box;
     margin: 0;
     border-width: 1px;
 }
@@ -1705,7 +1791,9 @@ input[type="text"]:focus {
 
 .custom-provider-trigger {
     width: 100%;
+    height: 46px;
     min-height: 46px;
+    box-sizing: border-box;
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
@@ -1795,6 +1883,10 @@ input[type="text"]:focus {
     box-shadow: none;
     font-size: 12px;
     text-align: left;
+    transition:
+        background-color 150ms ease,
+        color 150ms ease,
+        transform 150ms ease;
 }
 
 .custom-provider-option:hover,
@@ -1819,6 +1911,43 @@ input[type="text"]:focus {
     margin-top: 10px;
     color: #7d8799;
     font-size: 10px;
+}
+
+.advanced-content .button-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 0;
+}
+
+.settings-layout > .section,
+.settings-layout > .advanced-panel {
+    animation: settings-card-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    transition:
+        transform 190ms ease,
+        box-shadow 190ms ease,
+        border-color 190ms ease;
+}
+
+.settings-layout > :nth-child(2) {
+    animation-delay: 45ms;
+}
+
+.settings-layout > :nth-child(3) {
+    animation-delay: 90ms;
+}
+
+.settings-layout > :nth-child(4) {
+    animation-delay: 135ms;
+}
+
+.settings-layout > :nth-child(5) {
+    animation-delay: 180ms;
+}
+
+.settings-layout > .section:hover {
+    transform: translateY(-2px);
+    border-color: #a9c6f8;
+    box-shadow: 0 10px 28px rgba(35, 67, 111, 0.11);
 }
 
 .settings-ready-icon {
@@ -1861,12 +1990,24 @@ input[type="text"]:focus {
         flex-direction: column;
     }
 
+    .advanced-content .button-group {
+        grid-template-columns: 1fr;
+    }
+
     .settings-layout .section {
         height: auto;
     }
 }
 
 @media (prefers-color-scheme: dark) {
+    .settings-page {
+        --settings-dark-divider: #343d52;
+        --settings-dark-hover-bg: #2b3d58;
+        --settings-dark-hover-border: #6ea7ec;
+        --settings-dark-hover-text: #cfe7ff;
+        --settings-dark-hover-shadow: rgba(74, 145, 231, 0.16);
+    }
+
     .hero-section,
     .advanced-panel,
     .mode-choice,
@@ -1876,6 +2017,11 @@ input[type="text"]:focus {
         background-color: #252a3d;
         color: #e6ebf5;
         border-color: #3a4055;
+    }
+
+    .settings-layout .section,
+    .advanced-panel {
+        border-color: var(--settings-dark-divider);
     }
 
     .mode-choice strong,
@@ -1898,6 +2044,12 @@ input[type="text"]:focus {
     .free-plan-callout {
         background: #202b40;
         border-color: #344764;
+    }
+
+    .toggle-setting,
+    .stat-item,
+    .advanced-panel[open] summary {
+        border-color: var(--settings-dark-divider);
     }
 
     .segmented-setting {
@@ -1934,6 +2086,14 @@ input[type="text"]:focus {
         color: #cfe5ff;
     }
 
+    .advanced-panel summary {
+        color: #f8f9fa;
+    }
+
+    .advanced-panel summary::after {
+        color: #9eabc0;
+    }
+
     .advanced-field-label {
         color: #aaaaaa;
     }
@@ -1946,8 +2106,10 @@ input[type="text"]:focus {
 
     .custom-provider-trigger:hover,
     .custom-provider-trigger[aria-expanded="true"] {
-        border-color: #648bc7;
-        background: #252f43;
+        border-color: var(--settings-dark-hover-border);
+        background: var(--settings-dark-hover-bg);
+        color: var(--settings-dark-hover-text);
+        box-shadow: 0 0 0 3px var(--settings-dark-hover-shadow);
     }
 
     .custom-provider-menu {
@@ -1962,7 +2124,52 @@ input[type="text"]:focus {
 
     .custom-provider-option:hover,
     .custom-provider-option.selected {
-        background: #303c54;
-        color: #d7e9ff;
+        background: var(--settings-dark-hover-bg);
+        color: var(--settings-dark-hover-text);
+    }
+
+    .settings-layout > .section:hover {
+        border-color: var(--settings-dark-hover-border);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28), 0 0 0 1px var(--settings-dark-hover-shadow);
+    }
+
+    .mode-choice:hover,
+    .segmented-setting button:hover,
+    .site-row:hover,
+    .site-row button:hover,
+    .stat-item:hover,
+    .github-link:hover,
+    .close-btn:hover,
+    .secondary-btn:hover,
+    .guide-link:hover,
+    .lang-switch button:not(.active):hover {
+        border-color: var(--settings-dark-hover-border);
+        background: var(--settings-dark-hover-bg);
+        color: var(--settings-dark-hover-text);
+        box-shadow: 0 0 0 2px var(--settings-dark-hover-shadow);
+    }
+
+    .advanced-panel summary:hover {
+        border-bottom-color: var(--settings-dark-divider);
+        background: var(--settings-dark-hover-bg);
+        color: var(--settings-dark-hover-text);
+        box-shadow: none;
+    }
+
+    .mode-choice:hover strong,
+    .mode-choice:hover small,
+    .advanced-panel summary:hover::after {
+        color: var(--settings-dark-hover-text);
+    }
+
+    .stat-item:hover {
+        border-radius: 8px;
+        transform: translateX(3px);
+    }
+
+    .primary-btn:hover,
+    .settings-onboarding-primary:hover {
+        background: #4f9ff5;
+        box-shadow: 0 8px 20px rgba(79, 159, 245, 0.25);
     }
 }
