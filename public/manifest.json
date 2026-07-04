@@ -27,7 +27,7 @@
   ],
 
   "host_permissions": [
-    "https://api.explainthis.app/*"
+    "https://explain-this-api.explainthis-hc907.workers.dev/*"
   ],
 
   "optional_host_permissions": [

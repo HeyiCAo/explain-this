@@ -1,5 +1,6 @@
 const BUILT_IN_API_BASE_URL = (
-  import.meta.env.VITE_BUILT_IN_API_BASE_URL || 'https://api.explainthis.app/v1'
+  import.meta.env.VITE_BUILT_IN_API_BASE_URL
+    || 'https://explain-this-api.explainthis-hc907.workers.dev/v1'
 ).replace(/\/+$/, '');
 
 const STORAGE_KEYS = [

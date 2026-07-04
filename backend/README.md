@@ -34,9 +34,10 @@ to Worker storage by this application.
    npm run deploy
    ```
 
-5. Route the Worker through `https://api.explainthis.app`, or set
-   `VITE_BUILT_IN_API_BASE_URL` to the deployed `/v1` base URL and update the
-   extension's required API host permission before building.
+5. The current production Worker is served from
+   `https://explain-this-api.explainthis-hc907.workers.dev`. If that changes,
+   set `VITE_BUILT_IN_API_BASE_URL` to the deployed `/v1` base URL and update
+   the extension's required API host permission before building.
 
 The configured upstream must expose an OpenAI-compatible
 `/chat/completions` endpoint. `AI_MODEL` is deliberately server-side, so the

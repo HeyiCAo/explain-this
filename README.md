@@ -63,9 +63,10 @@ The extension never contains the free-mode provider key. The backend:
 - returns provider-neutral errors and streaming responses; and
 - does not persist selected text in the application database.
 
-The deployable Cloudflare Worker lives in [`backend`](backend/README.md). Before a
-production build, deploy it and set `VITE_BUILT_IN_API_BASE_URL` if the API is not
-served from `https://api.explainthis.app/v1`.
+The deployable Cloudflare Worker lives in [`backend`](backend/README.md). The
+current production build uses
+`https://explain-this-api.explainthis-hc907.workers.dev/v1`; set
+`VITE_BUILT_IN_API_BASE_URL` when deploying the API at a different base URL.
 
 ## Bring your own key
 

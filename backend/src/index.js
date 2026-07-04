@@ -167,8 +167,11 @@ async function callProvider(env, text, language, style, stream) {
           content: `Explain the text between <selection> tags.\n<selection>\n${text}\n</selection>`,
         },
       ],
-      max_tokens: style === 'fast' ? 500 : 1200,
+      max_tokens: style === 'fast' ? 800 : 2000,
       temperature: style === 'fast' ? 0.15 : 0.35,
+      ...(env.AI_REASONING_EFFORT
+        ? { reasoning_effort: env.AI_REASONING_EFFORT }
+        : {}),
       stream,
     }),
   });
