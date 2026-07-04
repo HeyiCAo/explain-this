@@ -4,7 +4,7 @@ compatibility_date = "2026-07-01"
 
 [vars]
 AI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
-AI_REASONING_EFFORT = "low"
+AI_REASONING_EFFORT = "none"
 FREE_DAILY_LIMIT = "50"
 FREE_MAX_CHARACTERS = "1000"
 FREE_REQUESTS_PER_MINUTE = "8"

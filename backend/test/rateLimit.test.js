@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { RateLimitBucket } from '../src/index.js';
+import { genericSseStream, RateLimitBucket } from '../src/index.js';
 
 class MemoryStorage {
   constructor() {
@@ -78,4 +78,28 @@ test('deletes anonymous rate-limit state when retention alarm fires', async () =
   assert.equal(storage.values.size, 1);
   await bucket.alarm();
   assert.equal(storage.values.size, 0);
+});
+
+test('splits large upstream deltas into incremental SSE events', async () => {
+  const encoder = new TextEncoder();
+  const upstream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(
+        'data: {"choices":[{"delta":{"content":"abcdefghijklmnop"}}]}\n\n'
+        + 'data: [DONE]\n\n',
+      ));
+      controller.close();
+    },
+  });
+
+  const output = await new Response(genericSseStream(upstream)).text();
+  const events = output.match(/^data: .+$/gm);
+
+  assert.deepEqual(events, [
+    'data: {"delta":"abcd"}',
+    'data: {"delta":"efgh"}',
+    'data: {"delta":"ijkl"}',
+    'data: {"delta":"mnop"}',
+    'data: [DONE]',
+  ]);
 });
