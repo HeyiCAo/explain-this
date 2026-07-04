@@ -1489,16 +1489,27 @@ input[type="password"]:focus {
     background: transparent;
     color: #5e697d;
     box-shadow: none;
+    transition:
+        color 180ms ease,
+        background-color 180ms ease,
+        box-shadow 180ms ease,
+        transform 140ms ease;
 }
 
 .segmented-setting button:hover {
-    transform: none;
+    color: #276dc3;
+    transform: translateY(-1px);
+}
+
+.segmented-setting button:active {
+    transform: scale(0.97);
 }
 
 .segmented-setting button.active {
     background: #ffffff;
     color: #276dc3;
     box-shadow: 0 2px 8px rgba(32, 56, 94, 0.10);
+    animation: settings-choice-pop 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .toggle-setting {
@@ -1534,15 +1545,55 @@ input[type="password"]:focus {
 }
 
 .toggle-setting input {
-    width: 38px;
-    height: 21px;
+    width: 40px;
+    height: 22px;
     flex: 0 0 auto;
-    accent-color: #2582e4;
-    transition: transform 160ms ease;
+    position: relative;
+    appearance: none;
+    margin: 0;
+    border: 0;
+    border-radius: 999px;
+    background: #cbd2dd;
+    cursor: pointer;
+    transition:
+        background-color 220ms ease,
+        box-shadow 220ms ease,
+        transform 140ms ease;
+}
+
+.toggle-setting input::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 5px rgba(29, 44, 68, 0.25);
+    transform: translateX(0);
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.toggle-setting input:hover {
+    box-shadow: 0 0 0 4px rgba(77, 133, 224, 0.10);
+}
+
+.toggle-setting input:active {
+    transform: scale(0.94);
+}
+
+.toggle-setting input:focus-visible {
+    outline: 3px solid rgba(77, 133, 224, 0.28);
+    outline-offset: 2px;
 }
 
 .toggle-setting input:checked {
-    animation: settings-radio-pop 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    background: #397fd7;
+}
+
+.toggle-setting input:checked::before {
+    transform: translateX(18px);
 }
 
 .privacy-note {
@@ -1588,12 +1639,17 @@ input[type="text"] {
     background: #ffffff;
     color: #303b50;
     font: inherit;
+    transition:
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        transform 180ms ease;
 }
 
 input[type="text"]:focus {
     outline: none;
     border-color: #5c96eb;
     box-shadow: 0 0 0 3px rgba(77, 133, 224, 0.10);
+    transform: translateY(-1px);
 }
 
 .site-add-row button {
@@ -1665,6 +1721,147 @@ input[type="text"]:focus {
     box-shadow: none;
 }
 
+.site-row button:hover {
+    border-color: #f0b8bd;
+    background: #fff3f4;
+    color: #b3262e;
+    transform: translateY(-1px);
+}
+
+.usage-chart {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    padding: 2px 0 0;
+}
+
+.usage-chart-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 8px;
+}
+
+.usage-chart-heading strong,
+.usage-chart-heading span {
+    display: block;
+}
+
+.usage-chart-heading strong {
+    color: #344057;
+    font-size: 13px;
+}
+
+.usage-chart-heading span {
+    margin-top: 4px;
+    color: #8992a3;
+    font-size: 10px;
+}
+
+.usage-chart-heading b {
+    color: #286fc8;
+    font-size: 28px;
+    line-height: 1;
+}
+
+.usage-chart-plot {
+    position: relative;
+    min-height: 0;
+}
+
+.usage-chart svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: visible;
+}
+
+.usage-grid-line {
+    stroke: #e6ebf2;
+    stroke-width: 1;
+}
+
+.usage-area {
+    fill: url("#usage-area-fill");
+    animation: usage-area-enter 420ms ease both;
+}
+
+.usage-line {
+    fill: none;
+    stroke: #3f86dc;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: usage-line-draw 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.usage-point {
+    fill: #ffffff;
+    stroke: #3f86dc;
+    stroke-width: 4;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: usage-point-enter 260ms 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.usage-point:hover {
+    fill: #3f86dc;
+    stroke: #ffffff;
+    transform: scale(1.35);
+}
+
+.usage-y-label {
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    color: #9aa3b2;
+    font-size: 9px;
+    line-height: 1;
+}
+
+.usage-y-label.top {
+    top: 5px;
+}
+
+.usage-y-label.bottom {
+    bottom: 19px;
+}
+
+.usage-x-labels {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 0 1px 0 14px;
+    color: #8b94a4;
+    font-size: 9px;
+    text-align: center;
+}
+
+.usage-x-labels span:first-child {
+    text-align: left;
+}
+
+.usage-x-labels span:last-child {
+    text-align: right;
+}
+
+@keyframes usage-line-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes usage-area-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes usage-point-enter {
+    from { opacity: 0; transform: scale(0.3); }
+    to { opacity: 1; transform: scale(1); }
+}
+
 .advanced-panel {
     grid-column: 1 / -1;
     scroll-margin-top: 24px;
@@ -1675,7 +1872,8 @@ input[type="text"]:focus {
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
 
-.advanced-panel summary {
+.advanced-summary {
+    width: 100%;
     min-height: 58px;
     box-sizing: border-box;
     display: flex;
@@ -1683,23 +1881,22 @@ input[type="text"]:focus {
     justify-content: space-between;
     gap: 16px;
     padding: 18px 20px;
-    list-style: none;
+    border: 0;
     border-radius: 15px;
+    background: transparent;
+    box-shadow: none;
     color: #444;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
+    text-align: left;
     transition:
         background-color 170ms ease,
         color 170ms ease,
         border-color 170ms ease;
 }
 
-.advanced-panel summary::-webkit-details-marker {
-    display: none;
-}
-
-.advanced-panel summary::after {
+.advanced-summary::after {
     content: "⌄";
     flex: 0 0 auto;
     color: #7d8799;
@@ -1709,45 +1906,67 @@ input[type="text"]:focus {
     transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), color 170ms ease;
 }
 
-.advanced-panel summary:hover {
+.advanced-summary:hover {
     background: #f5f9ff;
     color: #286fc8;
+    transform: none;
 }
 
-.advanced-panel summary:hover::after {
+.advanced-summary:hover::after {
     color: #4d8edb;
 }
 
-.advanced-panel summary:focus {
+.advanced-summary:focus {
     outline: none;
 }
 
-.advanced-panel summary:focus-visible {
+.advanced-summary:focus-visible {
     box-shadow: inset 0 0 0 2px rgba(77, 142, 219, 0.72);
 }
 
-.advanced-panel[open] summary::after {
+.advanced-panel.is-open .advanced-summary::after {
     transform: rotate(180deg);
 }
 
-.advanced-panel[open] summary {
+.advanced-panel.is-open .advanced-summary {
     border-bottom: 1px solid #edf0f4;
     border-radius: 15px 15px 0 0;
 }
 
-.advanced-panel[open] summary:focus-visible {
+.advanced-panel.is-open .advanced-summary:focus-visible {
     box-shadow:
         inset 2px 0 rgba(77, 142, 219, 0.72),
         inset -2px 0 rgba(77, 142, 219, 0.72),
         inset 0 2px rgba(77, 142, 219, 0.72);
 }
 
-.advanced-content {
-    padding: 18px 20px 20px;
+.advanced-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 180ms ease;
 }
 
-.advanced-panel[open] .advanced-content {
-    animation: settings-item-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.advanced-content {
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 20px;
+    transform: translateY(-7px);
+    transition:
+        padding 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 240ms ease;
+}
+
+.advanced-panel.is-open .advanced-collapse {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.advanced-panel.is-open .advanced-content {
+    padding: 18px 20px 20px;
+    transform: translateY(0);
 }
 
 .advanced-form-grid {
@@ -1866,7 +2085,23 @@ input[type="text"]:focus {
     border-radius: 12px;
     background: #ffffff;
     box-shadow: 0 14px 34px rgba(31, 55, 91, 0.18);
-    animation: settings-menu-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-6px) scale(0.98);
+    transform-origin: top center;
+    transition:
+        opacity 160ms ease,
+        visibility 0s linear 160ms,
+        transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.custom-provider-menu.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    transition-delay: 0s;
 }
 
 .custom-provider-option {
@@ -2048,7 +2283,7 @@ input[type="text"]:focus {
 
     .toggle-setting,
     .stat-item,
-    .advanced-panel[open] summary {
+    .advanced-panel.is-open .advanced-summary {
         border-color: var(--settings-dark-divider);
     }
 
@@ -2086,12 +2321,47 @@ input[type="text"]:focus {
         color: #cfe5ff;
     }
 
-    .advanced-panel summary {
+    .advanced-summary {
         color: #f8f9fa;
     }
 
-    .advanced-panel summary::after {
+    .advanced-summary::after {
         color: #9eabc0;
+    }
+
+    .toggle-setting input {
+        background: #4b566c;
+    }
+
+    .toggle-setting input:checked {
+        background: #5a9cec;
+    }
+
+    .usage-chart-heading strong {
+        color: #f0f3fa;
+    }
+
+    .usage-chart-heading span,
+    .usage-x-labels,
+    .usage-y-label {
+        color: #9fabc0;
+    }
+
+    .usage-chart-heading b {
+        color: #8dc1ff;
+    }
+
+    .usage-grid-line {
+        stroke: #3a4358;
+    }
+
+    .usage-line {
+        stroke: #72adf0;
+    }
+
+    .usage-point {
+        fill: #252a3d;
+        stroke: #72adf0;
     }
 
     .advanced-field-label {
@@ -2149,7 +2419,7 @@ input[type="text"]:focus {
         box-shadow: 0 0 0 2px var(--settings-dark-hover-shadow);
     }
 
-    .advanced-panel summary:hover {
+    .advanced-summary:hover {
         border-bottom-color: var(--settings-dark-divider);
         background: var(--settings-dark-hover-bg);
         color: var(--settings-dark-hover-text);
@@ -2158,7 +2428,7 @@ input[type="text"]:focus {
 
     .mode-choice:hover strong,
     .mode-choice:hover small,
-    .advanced-panel summary:hover::after {
+    .advanced-summary:hover::after {
         color: var(--settings-dark-hover-text);
     }
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import '../settingStyle.css'
-import { formatTokenCount, getUsageStats, normalizeUsageStats } from '../shared/usageStats'
+import { getLastSevenDays, getUsageStats, normalizeUsageStats } from '../shared/usageStats'
 
 const hasExtensionStorage = () => typeof chrome !== 'undefined' && chrome?.storage?.local;
 
@@ -64,7 +64,7 @@ const copy = {
         builtInBadge: '默认',
         builtInBody: '安装后直接使用，无需 API Key。每天可获得 50 次 AI 解释。',
         modeLabel: 'AI 模式',
-        builtInMode: 'Built-in AI',
+        builtInMode: '内置 AI',
         builtInModeHint: '每天 50 次免费解释，无需配置',
         byokMode: '使用自己的 API Key',
         byokModeHint: '更高额度和更多控制，费用由你的服务商账户承担',
@@ -79,17 +79,17 @@ const copy = {
         privacyTitle: '隐私',
         privacyBody: '只处理你主动提交解释的文本。免费模式会经由 Explain This 后端转发，原文不在我们的应用数据库中持久保存。',
         privacyLink: '查看完整隐私政策',
-        sitesTitle: 'Enabled sites',
+        sitesTitle: '已启用网站',
         sitesBody: 'Explain This 默认仅在你主动点击扩展或使用快捷键的页面运行。你也可以允许它在指定网站自动显示划词按钮。',
         sitePlaceholder: 'example.com',
         addSite: '允许网站',
         noSites: '还没有永久允许的网站。',
         remove: '移除',
-        siteAdded: '网站已启用。',
+        siteAdded: '网站已启用；已打开的匹配页面也会立即生效。',
         siteRemoved: '网站权限已移除。',
         invalidSite: '请输入有效的网站域名。',
         permissionDenied: '未授予网站权限。',
-        advanced: 'Advanced / Power User',
+        advanced: '高级选项',
         advancedIntro: '使用自己的 API Key 以获得更高额度或直接控制服务商。普通用户不需要这里的任何设置。',
         provider: 'AI 服务商',
         apiKey: 'API Key',
@@ -105,9 +105,11 @@ const copy = {
         testSuccess: '连接成功。',
         testFailed: '连接失败，请检查 Key 和网络后重试。',
         providerPermissionDenied: '需要允许连接此 AI 服务商才能使用自带 Key。',
-        localUsage: '本地使用记录',
-        totalRequests: '累计请求',
-        tokenEstimate: '估算 Token',
+        localUsage: '使用统计',
+        lastSevenDays: '最近 7 天查询次数',
+        sevenDayTotal: '7 天共 {count} 次',
+        queries: '{count} 次查询',
+        noQueries: '最近 7 天还没有查询记录',
         onboardingEyebrow: 'Explain This 新手设置',
         onboardingStep: '第 {current} 步，共 4 步',
         back: '返回',
@@ -151,11 +153,11 @@ const copy = {
         addSite: 'Allow site',
         noSites: 'No sites have permanent access yet.',
         remove: 'Remove',
-        siteAdded: 'Site enabled.',
+        siteAdded: 'Site enabled. Open matching pages are active now.',
         siteRemoved: 'Site permission removed.',
         invalidSite: 'Enter a valid website domain.',
         permissionDenied: 'Site permission was not granted.',
-        advanced: 'Advanced / Power User',
+        advanced: 'Advanced',
         advancedIntro: 'Bring your own API key for higher limits or direct provider control. Most people do not need anything in this section.',
         provider: 'AI provider',
         apiKey: 'API key',
@@ -171,9 +173,11 @@ const copy = {
         testSuccess: 'Connection successful.',
         testFailed: 'Connection failed. Check the key and your connection, then try again.',
         providerPermissionDenied: 'Provider access is required to use your own key.',
-        localUsage: 'Local usage record',
-        totalRequests: 'Total requests',
-        tokenEstimate: 'Estimated tokens',
+        localUsage: 'Usage',
+        lastSevenDays: 'Queries in the last 7 days',
+        sevenDayTotal: '{count} queries over 7 days',
+        queries: '{count} queries',
+        noQueries: 'No queries recorded in the last 7 days',
         onboardingEyebrow: 'Explain This setup',
         onboardingStep: 'Step {current} of 4',
         back: 'Back',
@@ -195,10 +199,6 @@ function format(text, values) {
         (result, [key, value]) => result.replace(`{${key}}`, value),
         text,
     );
-}
-
-function isMacPlatform() {
-    return /Mac|iPhone|iPad|iPod/i.test(navigator.platform);
 }
 
 function getPrivacyUrl() {
@@ -234,17 +234,35 @@ function removeOptionalOrigins(origins) {
     });
 }
 
+function syncEnabledSites() {
+    return new Promise((resolve) => {
+        if (typeof chrome === 'undefined' || !chrome?.runtime?.sendMessage) {
+            resolve();
+            return;
+        }
+        chrome.runtime.sendMessage({ action: 'syncEnabledSites' }, () => {
+            void chrome.runtime.lastError;
+            resolve();
+        });
+    });
+}
+
 function normalizeSite(value) {
     const trimmed = String(value || '').trim().toLowerCase();
     if (!trimmed || /[\s/]/.test(trimmed.replace(/^https?:\/\//, ''))) return null;
     try {
         const url = new URL(trimmed.includes('://') ? trimmed : `https://${trimmed}`);
         if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) return null;
+        const hostname = url.hostname.replace(/^www\./, '');
+        const supportsSubdomains = hostname !== 'localhost'
+            && !/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)
+            && !hostname.startsWith('[');
+        const permissionHost = supportsSubdomains ? `*.${hostname}` : hostname;
         return {
-            hostname: url.hostname,
+            hostname,
             origins: [
-                `https://${url.hostname}/*`,
-                `http://${url.hostname}/*`,
+                `https://${permissionHost}/*`,
+                `http://${permissionHost}/*`,
             ],
         };
     } catch {
@@ -286,6 +304,82 @@ function Section({ id, title, children, className = '' }) {
             <div className="section-title"><span>{title}</span></div>
             {children}
         </section>
+    );
+}
+
+function UsageChart({ stats, lang, labels }) {
+    const days = useMemo(() => getLastSevenDays(stats), [stats]);
+    const width = 640;
+    const height = 220;
+    const padding = { top: 20, right: 18, bottom: 26, left: 32 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    const maximum = Math.max(1, ...days.map((day) => day.requests));
+    const roundedMaximum = maximum <= 5 ? maximum : Math.ceil(maximum / 5) * 5;
+    const points = days.map((day, index) => {
+        const x = padding.left + (chartWidth * index) / (days.length - 1);
+        const y = padding.top + chartHeight - (day.requests / roundedMaximum) * chartHeight;
+        return { ...day, x, y };
+    });
+    const linePath = points.map((point, index) => (
+        `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
+    )).join(' ');
+    const areaPath = `${linePath} L ${points.at(-1).x} ${padding.top + chartHeight} L ${points[0].x} ${padding.top + chartHeight} Z`;
+    const total = days.reduce((sum, day) => sum + day.requests, 0);
+    const locale = lang === 'zh' ? 'zh-CN' : 'en-US';
+    const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+
+    return (
+        <div className="usage-chart">
+            <div className="usage-chart-heading">
+                <div>
+                    <strong>{labels.lastSevenDays}</strong>
+                    <span>{total === 0 ? labels.noQueries : format(labels.sevenDayTotal, { count: total })}</span>
+                </div>
+                <b>{total}</b>
+            </div>
+            <div className="usage-chart-plot">
+                <span className="usage-y-label top">{roundedMaximum}</span>
+                <span className="usage-y-label bottom">0</span>
+                <svg
+                    viewBox={`0 0 ${width} ${height}`}
+                    role="img"
+                    aria-label={format(labels.sevenDayTotal, { count: total })}
+                >
+                    <title>{labels.lastSevenDays}</title>
+                    <defs>
+                        <linearGradient id="usage-area-fill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#4d91e6" stopOpacity="0.28" />
+                            <stop offset="100%" stopColor="#4d91e6" stopOpacity="0.02" />
+                        </linearGradient>
+                    </defs>
+                    {[0, 0.5, 1].map((fraction) => (
+                        <line
+                            className="usage-grid-line"
+                            x1={padding.left}
+                            x2={width - padding.right}
+                            y1={padding.top + chartHeight * fraction}
+                            y2={padding.top + chartHeight * fraction}
+                            key={fraction}
+                        />
+                    ))}
+                    <path className="usage-area" d={areaPath} />
+                    <path className="usage-line" d={linePath} pathLength="1" />
+                    {points.map((point) => (
+                        <circle className="usage-point" cx={point.x} cy={point.y} r="5" key={point.date}>
+                            <title>{format(labels.queries, { count: point.requests })}</title>
+                        </circle>
+                    ))}
+                </svg>
+            </div>
+            <div className="usage-x-labels" aria-hidden="true">
+                {days.map((day) => (
+                    <span key={day.date}>
+                        {weekdayFormatter.format(new Date(`${day.date}T12:00:00`))}
+                    </span>
+                ))}
+            </div>
+        </div>
     );
 }
 
@@ -421,6 +515,7 @@ function SettingsPage() {
     const [freeUsage, setFreeUsage] = useState(null);
     const [onboardingRequired, setOnboardingRequired] = useState(null);
     const [providerMenuOpen, setProviderMenuOpen] = useState(false);
+    const [advancedOpen, setAdvancedOpen] = useState(false);
     const advancedPanelRef = useRef(null);
     const providerMenuRef = useRef(null);
 
@@ -429,7 +524,6 @@ function SettingsPage() {
         () => providers.find((item) => item.id === provider) || providers[0],
         [provider],
     );
-    const shortcutModifier = isMacPlatform() ? 'Cmd' : 'Ctrl';
 
     useEffect(() => {
         getStorage([
@@ -521,7 +615,7 @@ function SettingsPage() {
         void setStorage({ aiMode: nextMode });
         if (nextMode !== 'byok' || !advancedPanelRef.current) return;
 
-        advancedPanelRef.current.open = true;
+        setAdvancedOpen(true);
         requestAnimationFrame(() => {
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             advancedPanelRef.current?.scrollIntoView({
@@ -617,6 +711,7 @@ function SettingsPage() {
         setEnabledSites(nextSites);
         setSiteInput('');
         await setStorage({ enabledSites: nextSites });
+        await syncEnabledSites();
         setSiteStatus({ message: t.siteAdded, type: 'success' });
     };
 
@@ -625,6 +720,7 @@ function SettingsPage() {
         const nextSites = enabledSites.filter((item) => item.hostname !== site.hostname);
         setEnabledSites(nextSites);
         await setStorage({ enabledSites: nextSites });
+        await syncEnabledSites();
         setSiteStatus({ message: t.siteRemoved, type: 'success' });
     };
 
@@ -775,23 +871,24 @@ function SettingsPage() {
                 </Section>
 
                 <Section id="usage" title={t.localUsage}>
-                    <div className="stat-item">
-                        <span className="stat-label">{t.totalRequests}</span>
-                        <span className="stat-value">{usageStats.totalRequests}</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">{t.tokenEstimate}</span>
-                        <span className="stat-value">{formatTokenCount(usageStats.totalTokens)}</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">{lang === 'zh' ? '划词快捷键' : 'Selection shortcut'}</span>
-                        <span className="stat-value"><kbd>{shortcutModifier}</kbd>+<kbd>E</kbd></span>
-                    </div>
+                    <UsageChart stats={usageStats} lang={lang} labels={t} />
                 </Section>
 
-                <details className="advanced-panel" ref={advancedPanelRef}>
-                    <summary>{t.advanced}</summary>
-                    <div className="advanced-content">
+                <section className={`advanced-panel ${advancedOpen ? 'is-open' : ''}`} ref={advancedPanelRef}>
+                    <button
+                        type="button"
+                        className="advanced-summary"
+                        aria-expanded={advancedOpen}
+                        onClick={() => setAdvancedOpen((current) => !current)}
+                    >
+                        <span>{t.advanced}</span>
+                    </button>
+                    <div
+                        className="advanced-collapse"
+                        aria-hidden={!advancedOpen}
+                        inert={!advancedOpen}
+                    >
+                        <div className="advanced-content">
                         <p>{t.advancedIntro}</p>
                         <div className="advanced-form-grid">
                             <div className="advanced-field">
@@ -813,13 +910,17 @@ function SettingsPage() {
                                         <span>{selectedProvider.name}</span>
                                         <span className="custom-provider-chevron" aria-hidden="true">⌄</span>
                                     </button>
-                                    {providerMenuOpen && (
-                                        <div className="custom-provider-menu" role="listbox">
+                                    <div
+                                        className={`custom-provider-menu ${providerMenuOpen ? 'is-open' : ''}`}
+                                        role="listbox"
+                                        aria-hidden={!providerMenuOpen}
+                                    >
                                             {providers.map((item) => (
                                                 <button
                                                     type="button"
                                                     role="option"
                                                     aria-selected={provider === item.id}
+                                                    tabIndex={providerMenuOpen ? 0 : -1}
                                                     className={`custom-provider-option ${provider === item.id ? 'selected' : ''}`}
                                                     onClick={() => handleProviderChange(item.id)}
                                                     key={item.id}
@@ -833,8 +934,7 @@ function SettingsPage() {
                                                     )}
                                                 </button>
                                             ))}
-                                        </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
                             <label>
@@ -864,8 +964,9 @@ function SettingsPage() {
                         {keyStatus.message && (
                             <div className={`status ${keyStatus.type}`}>{keyStatus.message}</div>
                         )}
+                        </div>
                     </div>
-                </details>
+                </section>
             </div>
         </div>
     );

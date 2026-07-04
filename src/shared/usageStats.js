@@ -1,8 +1,40 @@
 const USAGE_KEY = 'usageStats';
 const DEFAULT_QUOTA_TOKENS = 1000000;
+const DAILY_HISTORY_DAYS = 30;
 
 export function todayKey(date = new Date()) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function dateFromKey(key) {
+  const [year, month, day] = String(key || '').split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day, 12);
+}
+
+function normalizeDailyRequests(stats = {}, currentDate = todayKey()) {
+  const dailyRequests = {};
+  const oldestDate = new Date();
+  oldestDate.setHours(12, 0, 0, 0);
+  oldestDate.setDate(oldestDate.getDate() - (DAILY_HISTORY_DAYS - 1));
+  const oldestKey = todayKey(oldestDate);
+
+  Object.entries(stats.dailyRequests || {}).forEach(([date, count]) => {
+    if (!dateFromKey(date) || date < oldestKey || date > currentDate) return;
+    dailyRequests[date] = Math.max(0, Number(count) || 0);
+  });
+
+  const legacyDate = dateFromKey(stats.date) ? stats.date : currentDate;
+  const legacyRequests = Math.max(0, Number(stats.todayRequests) || 0);
+  if (legacyRequests > 0 && dailyRequests[legacyDate] === undefined) {
+    dailyRequests[legacyDate] = legacyRequests;
+  }
+
+  if (dailyRequests[currentDate] === undefined) dailyRequests[currentDate] = 0;
+  return dailyRequests;
 }
 
 export function estimateTokens(text) {
@@ -24,13 +56,15 @@ export function estimateTokens(text) {
 }
 
 export function emptyUsageStats() {
+  const date = todayKey();
   return {
-    date: todayKey(),
+    date,
     todayRequests: 0,
     totalRequests: 0,
     todayTokens: 0,
     totalTokens: 0,
     quotaTokens: DEFAULT_QUOTA_TOKENS,
+    dailyRequests: { [date]: 0 },
     updatedAt: null,
   };
 }
@@ -46,6 +80,7 @@ export function normalizeUsageStats(stats = {}) {
     todayRequests: Number(stats.todayRequests) || 0,
     totalTokens: Number(stats.totalTokens) || 0,
     todayTokens: Number(stats.todayTokens) || 0,
+    dailyRequests: normalizeDailyRequests(stats, currentDate),
   };
 
   if (base.date !== currentDate) {
@@ -85,16 +120,35 @@ export function setUsageStats(stats) {
 export async function recordUsage({ inputText, outputText }) {
   const stats = await getUsageStats();
   const tokens = estimateTokens(inputText) + estimateTokens(outputText);
+  const date = todayKey();
   const nextStats = {
     ...stats,
     todayRequests: stats.todayRequests + 1,
     totalRequests: stats.totalRequests + 1,
     todayTokens: stats.todayTokens + tokens,
     totalTokens: stats.totalTokens + tokens,
+    dailyRequests: {
+      ...stats.dailyRequests,
+      [date]: (Number(stats.dailyRequests?.[date]) || 0) + 1,
+    },
     updatedAt: Date.now(),
   };
   await setUsageStats(nextStats);
   return nextStats;
+}
+
+export function getLastSevenDays(stats, endDate = new Date()) {
+  const normalized = normalizeUsageStats(stats);
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(endDate);
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() - (6 - index));
+    const key = todayKey(date);
+    return {
+      date: key,
+      requests: Math.max(0, Number(normalized.dailyRequests?.[key]) || 0),
+    };
+  });
 }
 
 export function formatTokenCount(value) {

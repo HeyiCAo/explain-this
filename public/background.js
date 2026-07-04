@@ -6,6 +6,18 @@ function queryActiveTab() {
   });
 }
 
+function queryTabs(queryInfo = {}) {
+  return new Promise((resolve) => {
+    chrome.tabs.query(queryInfo, (tabs) => {
+      if (chrome.runtime.lastError) {
+        resolve([]);
+        return;
+      }
+      resolve(tabs || []);
+    });
+  });
+}
+
 function isSupportedPage(url) {
   return /^https?:\/\//i.test(String(url || ''));
 }
@@ -91,11 +103,57 @@ async function activateCurrentTab() {
 
 function siteIsEnabled(url, enabledSites) {
   try {
-    const hostname = new URL(url).hostname;
-    return enabledSites.some((site) => site?.hostname === hostname);
+    const hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+    return enabledSites.some((site) => {
+      const allowedHostname = String(site?.hostname || '').toLowerCase().replace(/^www\./, '');
+      return allowedHostname
+        && (hostname === allowedHostname || hostname.endsWith(`.${allowedHostname}`));
+    });
   } catch {
     return false;
   }
+}
+
+const ENABLED_SITES_SCRIPT_ID = 'explain-this-enabled-sites';
+
+function getSiteOrigins(site) {
+  if (Array.isArray(site?.origins) && site.origins.length) return site.origins;
+  const hostname = String(site?.hostname || '').trim().toLowerCase();
+  if (!hostname) return [];
+  return [`https://${hostname}/*`, `http://${hostname}/*`];
+}
+
+async function syncEnabledSiteScripts() {
+  const { enabledSites: storedSites } = await chrome.storage.local.get(['enabledSites']);
+  const enabledSites = Array.isArray(storedSites) ? storedSites : [];
+  const matches = [...new Set(enabledSites.flatMap(getSiteOrigins))];
+
+  if (chrome.scripting.unregisterContentScripts && chrome.scripting.registerContentScripts) {
+    try {
+      await chrome.scripting.unregisterContentScripts({ ids: [ENABLED_SITES_SCRIPT_ID] });
+    } catch {
+      // The script is not registered yet.
+    }
+    if (matches.length) {
+      try {
+        await chrome.scripting.registerContentScripts([{
+          id: ENABLED_SITES_SCRIPT_ID,
+          matches,
+          js: ['content.js'],
+          css: ['content.css'],
+          runAt: 'document_idle',
+          persistAcrossSessions: true,
+        }]);
+      } catch {
+        // The onUpdated fallback below still covers future navigations.
+      }
+    }
+  }
+
+  const tabs = await queryTabs();
+  const matchingTabs = tabs.filter((tab) => tab?.id && siteIsEnabled(tab.url, enabledSites));
+  const results = await Promise.all(matchingTabs.map((tab) => ensureContentScript(tab)));
+  return results.filter(Boolean).length;
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -115,6 +173,7 @@ chrome.runtime.onInstalled.addListener(() => {
     }
     if (Object.keys(defaults).length) chrome.storage.local.set(defaults);
   });
+  syncEnabledSiteScripts().catch(() => {});
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -134,7 +193,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+  if (message.action === 'syncEnabledSites') {
+    syncEnabledSiteScripts()
+      .then((activatedTabs) => {
+        sendResponse({ success: true, activatedTabs });
+      })
+      .catch(() => {
+        sendResponse({ success: false, activatedTabs: 0 });
+      });
+    return true;
+  }
   return false;
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  syncEnabledSiteScripts().catch(() => {});
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
