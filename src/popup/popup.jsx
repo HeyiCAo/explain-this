@@ -71,7 +71,7 @@ const popupEn = {
 
 const firstRunZh = {
   eyebrow: '欢迎使用 Explain This',
-  step: '第 1 步，共 4 步',
+  step: '第 1 步，共 5 步',
   continue: '继续前往设置',
   opening: '正在打开设置…',
   languageTitle: '选择你的使用语言',
@@ -84,7 +84,7 @@ const firstRunZh = {
 
 const firstRunEn = {
   eyebrow: 'Welcome to Explain This',
-  step: 'Step 1 of 4',
+  step: 'Step 1 of 5',
   continue: 'Continue to Settings',
   opening: 'Opening Settings…',
   languageTitle: 'Choose your language',
@@ -220,6 +220,7 @@ function LanguageWelcome({ language, onLanguageChange }) {
 
       <div className="welcome-progress" aria-hidden="true">
         <span className="active"></span>
+        <span></span>
         <span></span>
         <span></span>
         <span></span>

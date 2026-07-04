@@ -111,17 +111,32 @@ const copy = {
         queries: '{count} 次查询',
         noQueries: '最近 7 天还没有查询记录',
         onboardingEyebrow: 'Explain This 新手设置',
-        onboardingStep: '第 {current} 步，共 4 步',
+        onboardingStep: '第 {current} 步，共 5 步',
         back: '返回',
         continue: '继续',
         styleTitle: '你喜欢怎样的解释？',
         styleBody: '先选择默认详略，之后可以在 popup 中随时切换。',
-        privacyOnboardingTitle: '只解释你主动选择的文本',
-        privacyOnboardingBody: 'Explain This 不读取浏览历史。只有当你点击 Explain this、使用快捷键或手动发送时，文本才会被处理。',
-        freeFlowTitle: '免费模式如何工作？',
-        freeFlowBody: '选中文本会经由 Explain This 后端安全转发给 AI 服务商。后端隐藏模型 Key、执行每日额度和滥用限制；应用不会持久保存原文。',
+        privacyOnboardingTitle: '数据如何传输？',
+        privacyOnboardingBody: '只有你主动提交的文本会被处理。扩展不会发送当前页面网址、浏览历史或网页中的其他内容。网络请求会携带 IP；应用只保存其加盐哈希和请求计数，用于限额与滥用保护。',
+        freeFlowTitle: '免费模式的数据路径',
+        freeFlowBody: '扩展发送选中文本、回答语言、解释详略和随机安装 ID 到 Explain This 后端；后端执行额度与滥用保护，再将解释请求转发给 AI 服务商。原文不会保存在我们的应用数据库中。',
+        byokFlowTitle: '使用自己的 API Key',
+        byokFlowBody: '请求会从扩展直接发送到你选择的 AI 服务商，不经过 Explain This 后端；API Key 仅从此浏览器本地读取，用于向该服务商认证。',
+        selectedTextNode: '你选择的文本',
+        backendNode: 'Explain This 后端',
+        providerNode: 'AI 服务商',
+        resultNode: '解释结果',
+        ownKeyShortcut: 'I have my own API Key',
+        activationTitle: '先激活，再开始划词',
+        activationBody: 'Chrome 只会在你主动点击扩展后授予当前页面访问权限。首次在普通网页使用时，请先点击一次浏览器工具栏里的 Explain This 图标。',
+        clickOnceTitle: '普通网页：点击一次',
+        clickOnceBody: '点击插件后，当前标签页会立即激活划词按钮。',
+        firstSitesTitle: '常用网站：加入白名单',
+        firstSitesBody: '加入后，这些网站及其子域名会自动启用，无需每次先点插件。',
+        addFirstSite: '添加网站',
+        activationContinue: '继续',
         readyTitle: '准备好了',
-        readyBody: '每天 50 次免费解释，无需 API Key。选中文字，点击 Explain this 即可开始。',
+        readyBody: '每天 50 次免费解释，无需 API Key。先在网页上点击一次插件，之后选中文字即可看到 Explain this。',
         start: '开始使用',
     },
     en: {
@@ -179,17 +194,32 @@ const copy = {
         queries: '{count} queries',
         noQueries: 'No queries recorded in the last 7 days',
         onboardingEyebrow: 'Explain This setup',
-        onboardingStep: 'Step {current} of 4',
+        onboardingStep: 'Step {current} of 5',
         back: 'Back',
         continue: 'Continue',
         styleTitle: 'How detailed should explanations be?',
         styleBody: 'Choose a default style. You can switch it anytime in the popup.',
-        privacyOnboardingTitle: 'Only text you choose is explained',
-        privacyOnboardingBody: 'Explain This does not read your browsing history. Text is processed only when you click Explain this, use the shortcut, or send it manually.',
-        freeFlowTitle: 'How does the free mode work?',
-        freeFlowBody: 'Selected text is securely relayed through the Explain This backend to an AI provider. The backend protects the model key and enforces quotas and abuse controls; the app does not persist the original text.',
+        privacyOnboardingTitle: 'Where does your data go?',
+        privacyOnboardingBody: 'Only text you explicitly submit is processed. The extension does not send the current page URL, browsing history, or other page content. Network requests include an IP address; the app stores only salted hashes and request counters for quota and abuse protection.',
+        freeFlowTitle: 'Built-in AI data path',
+        freeFlowBody: 'The extension sends the selected text, response language, explanation style, and a random installation ID to the Explain This backend. The backend enforces quotas and abuse protection, then relays the explanation request to an AI provider. The original text is not stored in our application database.',
+        byokFlowTitle: 'Using your own API key',
+        byokFlowBody: 'Requests go directly from the extension to your chosen AI provider and bypass the Explain This backend. Your API key is read from local extension storage only to authenticate with that provider.',
+        selectedTextNode: 'Selected text',
+        backendNode: 'Explain This backend',
+        providerNode: 'AI provider',
+        resultNode: 'Explanation',
+        ownKeyShortcut: 'I have my own API Key',
+        activationTitle: 'Activate once, then highlight',
+        activationBody: 'Chrome grants access to the current page only after you interact with the extension. On a regular site, click the Explain This toolbar icon once before your first selection.',
+        clickOnceTitle: 'Regular pages: click once',
+        clickOnceBody: 'Clicking the extension immediately activates the selection button in the current tab.',
+        firstSitesTitle: 'Frequent sites: add to allowlist',
+        firstSitesBody: 'Allowed sites and their subdomains activate automatically, so no toolbar click is needed.',
+        addFirstSite: 'Add site',
+        activationContinue: 'Continue',
         readyTitle: 'You’re ready',
-        readyBody: 'Get 50 free explanations every day with no API key. Highlight text and click Explain this to begin.',
+        readyBody: 'Get 50 free explanations every day with no API key. Click the extension once on a page, then highlight text to reveal Explain this.',
         start: 'Start explaining',
     }
 };
@@ -328,6 +358,10 @@ function UsageChart({ stats, lang, labels }) {
     const total = days.reduce((sum, day) => sum + day.requests, 0);
     const locale = lang === 'zh' ? 'zh-CN' : 'en-US';
     const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    const pointsWithLabels = points.map((point) => ({
+        ...point,
+        label: weekdayFormatter.format(new Date(`${point.date}T12:00:00`)),
+    }));
 
     return (
         <div className="usage-chart">
@@ -365,31 +399,45 @@ function UsageChart({ stats, lang, labels }) {
                     ))}
                     <path className="usage-area" d={areaPath} />
                     <path className="usage-line" d={linePath} pathLength="1" />
-                    {points.map((point) => (
+                    {pointsWithLabels.map((point) => (
                         <circle className="usage-point" cx={point.x} cy={point.y} r="5" key={point.date}>
                             <title>{format(labels.queries, { count: point.requests })}</title>
                         </circle>
                     ))}
+                    {pointsWithLabels.map((point, index) => (
+                        <text
+                            className="usage-x-label"
+                            x={point.x}
+                            y={height - 3}
+                            textAnchor={index === 0 ? 'start' : index === pointsWithLabels.length - 1 ? 'end' : 'middle'}
+                            key={`${point.date}-label`}
+                        >
+                            {point.label}
+                        </text>
+                    ))}
                 </svg>
-            </div>
-            <div className="usage-x-labels" aria-hidden="true">
-                {days.map((day) => (
-                    <span key={day.date}>
-                        {weekdayFormatter.format(new Date(`${day.date}T12:00:00`))}
-                    </span>
-                ))}
             </div>
         </div>
     );
 }
 
-function SetupOnboarding({ lang, initialSpeed, onComplete }) {
+function SetupOnboarding({
+    lang,
+    initialSpeed,
+    initialEnabledSites,
+    onComplete,
+    onEnabledSitesChange,
+    onOpenAdvanced,
+}) {
     const [step, setStep] = useState(1);
     const [speed, setSpeed] = useState(initialSpeed || 'fast');
+    const [firstSiteInput, setFirstSiteInput] = useState('');
+    const [firstSites, setFirstSites] = useState(initialEnabledSites || []);
+    const [firstSiteStatus, setFirstSiteStatus] = useState({ message: '', type: '' });
     const t = copy[lang];
     const overallStep = step + 1;
 
-    const finish = async () => {
+    const completeOnboarding = async (openAdvanced = false) => {
         await setStorage({
             aiMode: 'builtIn',
             explainSpeed: speed,
@@ -397,7 +445,44 @@ function SetupOnboarding({ lang, initialSpeed, onComplete }) {
             onboardingComplete: true,
             onboardingStarted: false,
         });
+        if (openAdvanced) {
+            onOpenAdvanced(speed);
+            return;
+        }
         onComplete(speed);
+    };
+
+    const handleAddFirstSite = async () => {
+        const site = normalizeSite(firstSiteInput);
+        if (!site) {
+            setFirstSiteStatus({ message: t.invalidSite, type: 'error' });
+            return;
+        }
+        const granted = await requestOptionalOrigins(site.origins);
+        if (!granted) {
+            setFirstSiteStatus({ message: t.permissionDenied, type: 'error' });
+            return;
+        }
+        const nextSites = [
+            ...firstSites.filter((item) => item.hostname !== site.hostname),
+            site,
+        ].sort((left, right) => left.hostname.localeCompare(right.hostname));
+        setFirstSites(nextSites);
+        onEnabledSitesChange(nextSites);
+        setFirstSiteInput('');
+        await setStorage({ enabledSites: nextSites });
+        await syncEnabledSites();
+        setFirstSiteStatus({ message: t.siteAdded, type: 'success' });
+    };
+
+    const handleRemoveFirstSite = async (site) => {
+        await removeOptionalOrigins(site.origins || []);
+        const nextSites = firstSites.filter((item) => item.hostname !== site.hostname);
+        setFirstSites(nextSites);
+        onEnabledSitesChange(nextSites);
+        await setStorage({ enabledSites: nextSites });
+        await syncEnabledSites();
+        setFirstSiteStatus({ message: t.siteRemoved, type: 'success' });
     };
 
     return (
@@ -408,7 +493,7 @@ function SetupOnboarding({ lang, initialSpeed, onComplete }) {
                     <span>{format(t.onboardingStep, { current: overallStep })}</span>
                 </div>
                 <div className="settings-onboarding-progress" aria-hidden="true">
-                    {[1, 2, 3, 4].map((item) => (
+                    {[1, 2, 3, 4, 5].map((item) => (
                         <span key={item} className={item <= overallStep ? 'active' : ''}></span>
                     ))}
                 </div>
@@ -446,8 +531,17 @@ function SetupOnboarding({ lang, initialSpeed, onComplete }) {
 
                 {step === 2 && (
                     <div className="settings-onboarding-page compact">
-                        <div className="settings-onboarding-icon notice">✓</div>
+                        <div className="settings-onboarding-icon notice">→</div>
                         <h1>{t.privacyOnboardingTitle}</h1>
+                        <div className="settings-data-route" aria-label={t.freeFlowTitle}>
+                            <span>{t.selectedTextNode}</span>
+                            <b aria-hidden="true">→</b>
+                            <span>{t.backendNode}</span>
+                            <b aria-hidden="true">→</b>
+                            <span>{t.providerNode}</span>
+                            <b aria-hidden="true">→</b>
+                            <span>{t.resultNode}</span>
+                        </div>
                         <div className="settings-principle-box">
                             <strong>{t.privacyTitle}</strong>
                             <p>{t.privacyOnboardingBody}</p>
@@ -456,9 +550,18 @@ function SetupOnboarding({ lang, initialSpeed, onComplete }) {
                             <strong>{t.freeFlowTitle}</strong>
                             <p>{t.freeFlowBody}</p>
                         </div>
-                        <a className="settings-onboarding-link" href={getPrivacyUrl()} target="_blank" rel="noreferrer">
-                            {t.privacyLink} ↗
-                        </a>
+                        <div className="settings-principle-box byok">
+                            <strong>{t.byokFlowTitle}</strong>
+                            <p>{t.byokFlowBody}</p>
+                        </div>
+                        <div className="settings-onboarding-link-row">
+                            <a className="settings-onboarding-link" href={getPrivacyUrl()} target="_blank" rel="noreferrer">
+                                {t.privacyLink} ↗
+                            </a>
+                            <button className="settings-own-key-link" type="button" onClick={() => completeOnboarding(true)}>
+                                {t.ownKeyShortcut} →
+                            </button>
+                        </div>
                         <div className="settings-onboarding-actions">
                             <button className="settings-onboarding-secondary" onClick={() => setStep(1)}>
                                 {t.back}
@@ -471,6 +574,63 @@ function SetupOnboarding({ lang, initialSpeed, onComplete }) {
                 )}
 
                 {step === 3 && (
+                    <div className="settings-onboarding-page compact activation-page">
+                        <div className="settings-onboarding-icon activation">1×</div>
+                        <div>
+                            <h1>{t.activationTitle}</h1>
+                            <p className="settings-onboarding-intro">{t.activationBody}</p>
+                        </div>
+                        <div className="activation-note">
+                            <span>↗</span>
+                            <div>
+                                <strong>{t.clickOnceTitle}</strong>
+                                <p>{t.clickOnceBody}</p>
+                            </div>
+                        </div>
+                        <div className="first-sites-block">
+                            <strong>{t.firstSitesTitle}</strong>
+                            <p>{t.firstSitesBody}</p>
+                            <div className="site-add-row onboarding-site-add">
+                                <input
+                                    type="text"
+                                    value={firstSiteInput}
+                                    placeholder={t.sitePlaceholder}
+                                    onChange={(event) => {
+                                        setFirstSiteInput(event.target.value);
+                                        setFirstSiteStatus({ message: '', type: '' });
+                                    }}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter') handleAddFirstSite();
+                                    }}
+                                />
+                                <button className="primary-btn" onClick={handleAddFirstSite}>{t.addFirstSite}</button>
+                            </div>
+                            {firstSites.length > 0 && (
+                                <div className="site-list onboarding-site-list">
+                                    {firstSites.map((site) => (
+                                        <div className="site-row" key={site.hostname}>
+                                            <span><span className="site-dot"></span>{site.hostname}</span>
+                                            <button onClick={() => handleRemoveFirstSite(site)}>{t.remove}</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {firstSiteStatus.message && (
+                                <div className={`status ${firstSiteStatus.type}`}>{firstSiteStatus.message}</div>
+                            )}
+                        </div>
+                        <div className="settings-onboarding-actions">
+                            <button className="settings-onboarding-secondary" onClick={() => setStep(2)}>
+                                {t.back}
+                            </button>
+                            <button className="settings-onboarding-primary" onClick={() => setStep(4)}>
+                                {t.activationContinue}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 4 && (
                     <div className="settings-onboarding-page ready-page">
                         <div className="settings-ready-icon">
                             <img src="/icon128.png" alt="" />
@@ -484,10 +644,10 @@ function SetupOnboarding({ lang, initialSpeed, onComplete }) {
                             <span>{lang === 'zh' ? '次免费解释 / 天' : 'free explanations / day'}</span>
                         </div>
                         <div className="settings-onboarding-actions">
-                            <button className="settings-onboarding-secondary" onClick={() => setStep(2)}>
+                            <button className="settings-onboarding-secondary" onClick={() => setStep(3)}>
                                 {t.back}
                             </button>
-                            <button className="settings-onboarding-primary" onClick={finish}>
+                            <button className="settings-onboarding-primary" onClick={() => completeOnboarding(false)}>
                                 {t.start}
                             </button>
                         </div>
@@ -744,11 +904,28 @@ function SettingsPage() {
             <SetupOnboarding
                 lang={lang}
                 initialSpeed={speed}
+                initialEnabledSites={enabledSites}
+                onEnabledSitesChange={setEnabledSites}
                 onComplete={(nextSpeed) => {
                     setSpeed(nextSpeed);
                     setAiMode('builtIn');
                     setSaveRecent(true);
                     setOnboardingRequired(false);
+                }}
+                onOpenAdvanced={(nextSpeed) => {
+                    setSpeed(nextSpeed);
+                    setAiMode('builtIn');
+                    setSaveRecent(true);
+                    setAdvancedOpen(true);
+                    setOnboardingRequired(false);
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            advancedPanelRef.current?.scrollIntoView({
+                                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+                                block: 'start',
+                            });
+                        });
+                    });
                 }}
             />
         );

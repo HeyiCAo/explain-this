@@ -616,6 +616,37 @@ html {
             color: #3f5f91;
         }
 
+        .settings-principle-box.byok {
+            border-color: #cfe7dc;
+            background: #eef8f3;
+        }
+
+        .settings-principle-box.byok strong {
+            color: #256149;
+        }
+
+        .settings-data-route {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .settings-data-route span {
+            padding: 8px 10px;
+            border: 1px solid #dce5f2;
+            border-radius: 10px;
+            background: #f7faff;
+            color: #3d587e;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .settings-data-route b {
+            color: #8ca1bc;
+            font-size: 12px;
+        }
+
         .settings-notice-list {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -677,6 +708,96 @@ html {
 
         .settings-onboarding-link:hover {
             text-decoration: underline;
+        }
+
+        .settings-onboarding-link-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .settings-own-key-link {
+            width: auto;
+            flex: 0 0 auto;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #64748b;
+            box-shadow: none;
+            font-size: 10px;
+            font-weight: 650;
+        }
+
+        .settings-own-key-link:hover {
+            background: transparent;
+            color: #286fc8;
+            box-shadow: none;
+            transform: translateX(2px);
+        }
+
+        .settings-onboarding-icon.activation {
+            background: linear-gradient(135deg, #e6f7ef, #d4f0e3);
+            color: #217157;
+            font-size: 14px;
+        }
+
+        .activation-note {
+            display: grid;
+            grid-template-columns: 38px 1fr;
+            gap: 11px;
+            align-items: center;
+            padding: 12px 14px;
+            border: 1px solid #d8e5fa;
+            border-radius: 14px;
+            background: #f1f6ff;
+        }
+
+        .activation-note > span {
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            background: #dfeaff;
+            color: #3563d9;
+            font-weight: 800;
+        }
+
+        .activation-note strong,
+        .first-sites-block > strong {
+            display: block;
+            color: #2f405c;
+            font-size: 13px;
+        }
+
+        .activation-note p,
+        .first-sites-block > p {
+            margin: 3px 0 0;
+            color: #68758a;
+            font-size: 11px;
+            line-height: 1.45;
+        }
+
+        .first-sites-block {
+            padding: 13px 14px;
+            border: 1px solid #e2e7ef;
+            border-radius: 14px;
+            background: rgba(250, 252, 255, 0.88);
+        }
+
+        .onboarding-site-add {
+            margin: 11px 0 0;
+        }
+
+        .onboarding-site-list {
+            max-height: 90px;
+            margin-top: 8px;
+            overflow-y: auto;
+        }
+
+        .first-sites-block .status {
+            margin-top: 8px;
         }
 
         .settings-onboarding-key {
@@ -784,6 +905,12 @@ html {
             .settings-choice-grid.provider-choices,
             .settings-notice-list {
                 grid-template-columns: 1fr;
+            }
+
+            .settings-onboarding-link-row {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 10px;
             }
 
             .settings-onboarding-actions.key-actions {
@@ -1031,9 +1158,47 @@ html {
         color: #bdc9dc;
     }
 
+    .settings-principle-box.byok {
+        border-color: #315e50;
+        background: #213a35;
+        color: #a9cfbf;
+    }
+
     .settings-principle-box strong,
     .settings-principle-box .analogy {
         color: #cfe0ff;
+    }
+
+    .settings-principle-box.byok strong {
+        color: #a9dfcb;
+    }
+
+    .settings-data-route span,
+    .activation-note,
+    .first-sites-block {
+        border-color: #3a4358;
+        background: #293248;
+        color: #dfe7f4;
+    }
+
+    .settings-data-route span,
+    .activation-note strong,
+    .first-sites-block > strong {
+        color: #dfe7f4;
+    }
+
+    .activation-note p,
+    .first-sites-block > p {
+        color: #a6b0c6;
+    }
+
+    .activation-note > span {
+        background: #344563;
+        color: #b8dcff;
+    }
+
+    .settings-own-key-link {
+        color: #9eabc0;
     }
 
     .settings-local-key-note {
@@ -1831,21 +1996,10 @@ input[type="text"]:focus {
     bottom: 19px;
 }
 
-.usage-x-labels {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    padding: 0 1px 0 14px;
-    color: #8b94a4;
-    font-size: 9px;
-    text-align: center;
-}
-
-.usage-x-labels span:first-child {
-    text-align: left;
-}
-
-.usage-x-labels span:last-child {
-    text-align: right;
+.usage-x-label {
+    fill: #8b94a4;
+    font-size: 10px;
+    font-family: inherit;
 }
 
 @keyframes usage-line-draw {
@@ -2342,9 +2496,12 @@ input[type="text"]:focus {
     }
 
     .usage-chart-heading span,
-    .usage-x-labels,
     .usage-y-label {
         color: #9fabc0;
+    }
+
+    .usage-x-label {
+        fill: #9fabc0;
     }
 
     .usage-chart-heading b {
