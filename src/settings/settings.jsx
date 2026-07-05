@@ -127,23 +127,26 @@ const copy = {
         providerNode: 'AI 服务商',
         resultNode: '解释结果',
         ownKeyShortcut: 'I have my own API Key',
-        activationTitle: '先激活，再开始划词',
-        activationBody: 'Chrome 只会在你主动点击扩展后授予当前页面访问权限。首次在普通网页使用时，请先点击一次浏览器工具栏里的 Explain This 图标。',
-        clickOnceTitle: '普通网页：点击一次',
-        clickOnceBody: '点击插件后，当前标签页会立即激活划词按钮。',
-        firstSitesTitle: '常用网站：加入白名单',
-        firstSitesBody: '加入后，这些网站及其子域名会自动启用，无需每次先点插件。',
-        addFirstSite: '添加网站',
-        activationContinue: '继续',
+        activationTitle: '按一次快捷键，激活当前网站',
+        activationBody: '在一个网站首次使用时，先选中文字，再按快捷键。这次明确的键盘操作会让 Chrome 临时授予 Explain This 当前网站的访问权限，并立即解释所选内容。',
+        shortcutMethodTitle: '第一次使用这个网站',
+        shortcutMethodBody: '选中文字后按 {shortcut}。同一网站保持激活时，之后划词就会直接显示气泡；进入新网站时再按一次即可。',
+        practiceTitle: '现在练习一次',
+        practiceText: '选中这句话，然后按下上方的快捷键。',
+        practiceInstruction: '请用鼠标选中示例句，再按 {shortcut}。',
+        practiceWaiting: '完成一次练习后才能继续。',
+        practiceSelectFirst: '快捷键收到了，但还没有选中示例文字。请先选中文字再试一次。',
+        practiceSuccess: '练习成功！你已经掌握了第一次激活方法。',
+        activationContinue: '完成练习，继续',
         readyTitle: '准备好了',
-        readyBody: '每天 50 次免费解释，无需 API Key。先在网页上点击一次插件，之后选中文字即可看到 Explain this。',
+        readyBody: '每天 50 次免费解释，无需 API Key。进入新网站后，先选中文字并按一次快捷键；网站激活后，继续划词就会看到 Explain this。',
         start: '开始使用',
     },
     en: {
         settings: 'Settings',
         close: 'Close',
         github: 'GitHub Repository',
-        builtInTitle: 'Free built-in AI',
+        builtInTitle: 'Free built-in API Key',
         builtInBadge: 'Default',
         builtInBody: 'Works immediately after installation. No API key required. Includes 50 AI explanations each day.',
         modeLabel: 'AI mode',
@@ -210,16 +213,19 @@ const copy = {
         providerNode: 'AI provider',
         resultNode: 'Explanation',
         ownKeyShortcut: 'I have my own API Key',
-        activationTitle: 'Activate once, then highlight',
-        activationBody: 'Chrome grants access to the current page only after you interact with the extension. On a regular site, click the Explain This toolbar icon once before your first selection.',
-        clickOnceTitle: 'Regular pages: click once',
-        clickOnceBody: 'Clicking the extension immediately activates the selection button in the current tab.',
-        firstSitesTitle: 'Frequent sites: add to allowlist',
-        firstSitesBody: 'Allowed sites and their subdomains activate automatically, so no toolbar click is needed.',
-        addFirstSite: 'Add site',
-        activationContinue: 'Continue',
+        activationTitle: 'Press one shortcut to activate this site',
+        activationBody: 'The first time you use a website, select some text and press the shortcut. This explicit keyboard action lets Chrome temporarily grant Explain This access to the current site and immediately explains your selection.',
+        shortcutMethodTitle: 'First use on a website',
+        shortcutMethodBody: 'Select text and press {shortcut}. While that site stays active, later selections show the bubble directly. Press it once again when you move to a new website.',
+        practiceTitle: 'Practice it now',
+        practiceText: 'Select this sentence, then press the shortcut shown above.',
+        practiceInstruction: 'Select the sample sentence with your pointer, then press {shortcut}.',
+        practiceWaiting: 'Complete one practice attempt to continue.',
+        practiceSelectFirst: 'The shortcut worked, but the sample text was not selected. Select it and try again.',
+        practiceSuccess: 'Practice complete! You now know how to activate a website for the first time.',
+        activationContinue: 'Finish practice and continue',
         readyTitle: 'You’re ready',
-        readyBody: 'Get 50 free explanations every day with no API key. Click the extension once on a page, then highlight text to reveal Explain this.',
+        readyBody: 'Get 50 free explanations every day with no API key. On a new website, select text and press the shortcut once. After activation, keep highlighting to reveal Explain this.',
         start: 'Start explaining',
     }
 };
@@ -424,18 +430,73 @@ function UsageChart({ stats, lang, labels }) {
 function SetupOnboarding({
     lang,
     initialSpeed,
-    initialEnabledSites,
     onComplete,
-    onEnabledSitesChange,
     onOpenAdvanced,
 }) {
     const [step, setStep] = useState(1);
     const [speed, setSpeed] = useState(initialSpeed || 'fast');
-    const [firstSiteInput, setFirstSiteInput] = useState('');
-    const [firstSites, setFirstSites] = useState(initialEnabledSites || []);
-    const [firstSiteStatus, setFirstSiteStatus] = useState({ message: '', type: '' });
+    const [practiceComplete, setPracticeComplete] = useState(false);
+    const [practiceStatus, setPracticeStatus] = useState({ message: '', type: '' });
+    const practiceTextRef = useRef(null);
     const t = copy[lang];
     const overallStep = step + 1;
+    const isMac = typeof navigator !== 'undefined'
+        && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgentData?.platform || navigator.platform);
+    const shortcutLabel = isMac ? '⌘ E' : 'Ctrl + E';
+
+    useEffect(() => {
+        if (step !== 3) return undefined;
+
+        const handlePracticeAttempt = () => {
+            const practiceField = practiceTextRef.current;
+            const fieldSelection = practiceField
+                ? practiceField.value
+                    .slice(practiceField.selectionStart, practiceField.selectionEnd)
+                    .trim()
+                : '';
+            const selection = window.getSelection();
+            const pageSelection = selection?.toString().trim() || '';
+            const selectionInsidePractice = [selection?.anchorNode, selection?.focusNode]
+                .filter(Boolean)
+                .some((node) => practiceTextRef.current?.contains(node));
+
+            if (fieldSelection.length < 2 && (pageSelection.length < 2 || !selectionInsidePractice)) {
+                setPracticeStatus({
+                    message: copy[lang].practiceSelectFirst,
+                    type: 'error',
+                });
+                return;
+            }
+
+            setPracticeComplete(true);
+            setPracticeStatus({
+                message: copy[lang].practiceSuccess,
+                type: 'success',
+            });
+            selection.removeAllRanges();
+            practiceField?.setSelectionRange(0, 0);
+        };
+
+        const handleShortcutMessage = (message) => {
+            if (message?.action === 'practiceShortcut') handlePracticeAttempt();
+        };
+        const handleKeyDown = (event) => {
+            if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'e') return;
+            event.preventDefault();
+            handlePracticeAttempt();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        if (typeof chrome !== 'undefined' && chrome?.runtime?.onMessage) {
+            chrome.runtime.onMessage.addListener(handleShortcutMessage);
+        }
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            if (typeof chrome !== 'undefined' && chrome?.runtime?.onMessage) {
+                chrome.runtime.onMessage.removeListener(handleShortcutMessage);
+            }
+        };
+    }, [step, lang]);
 
     const completeOnboarding = async (openAdvanced = false) => {
         await setStorage({
@@ -450,39 +511,6 @@ function SetupOnboarding({
             return;
         }
         onComplete(speed);
-    };
-
-    const handleAddFirstSite = async () => {
-        const site = normalizeSite(firstSiteInput);
-        if (!site) {
-            setFirstSiteStatus({ message: t.invalidSite, type: 'error' });
-            return;
-        }
-        const granted = await requestOptionalOrigins(site.origins);
-        if (!granted) {
-            setFirstSiteStatus({ message: t.permissionDenied, type: 'error' });
-            return;
-        }
-        const nextSites = [
-            ...firstSites.filter((item) => item.hostname !== site.hostname),
-            site,
-        ].sort((left, right) => left.hostname.localeCompare(right.hostname));
-        setFirstSites(nextSites);
-        onEnabledSitesChange(nextSites);
-        setFirstSiteInput('');
-        await setStorage({ enabledSites: nextSites });
-        await syncEnabledSites();
-        setFirstSiteStatus({ message: t.siteAdded, type: 'success' });
-    };
-
-    const handleRemoveFirstSite = async (site) => {
-        await removeOptionalOrigins(site.origins || []);
-        const nextSites = firstSites.filter((item) => item.hostname !== site.hostname);
-        setFirstSites(nextSites);
-        onEnabledSitesChange(nextSites);
-        await setStorage({ enabledSites: nextSites });
-        await syncEnabledSites();
-        setFirstSiteStatus({ message: t.siteRemoved, type: 'success' });
     };
 
     return (
@@ -575,55 +603,50 @@ function SetupOnboarding({
 
                 {step === 3 && (
                     <div className="settings-onboarding-page compact activation-page">
-                        <div className="settings-onboarding-icon activation">1×</div>
+                        <div className="settings-onboarding-icon activation">{isMac ? '⌘E' : 'Ctrl'}</div>
                         <div>
                             <h1>{t.activationTitle}</h1>
                             <p className="settings-onboarding-intro">{t.activationBody}</p>
                         </div>
-                        <div className="activation-note">
-                            <span>↗</span>
+                        <div className="shortcut-activation-card">
+                            <div className="shortcut-key-combo" aria-label={shortcutLabel}>
+                                <kbd>{isMac ? '⌘' : 'Ctrl'}</kbd>
+                                <span aria-hidden="true">+</span>
+                                <kbd>E</kbd>
+                            </div>
                             <div>
-                                <strong>{t.clickOnceTitle}</strong>
-                                <p>{t.clickOnceBody}</p>
+                                <strong>{t.shortcutMethodTitle}</strong>
+                                <p>{format(t.shortcutMethodBody, { shortcut: shortcutLabel })}</p>
                             </div>
                         </div>
-                        <div className="first-sites-block">
-                            <strong>{t.firstSitesTitle}</strong>
-                            <p>{t.firstSitesBody}</p>
-                            <div className="site-add-row onboarding-site-add">
-                                <input
-                                    type="text"
-                                    value={firstSiteInput}
-                                    placeholder={t.sitePlaceholder}
-                                    onChange={(event) => {
-                                        setFirstSiteInput(event.target.value);
-                                        setFirstSiteStatus({ message: '', type: '' });
-                                    }}
-                                    onKeyDown={(event) => {
-                                        if (event.key === 'Enter') handleAddFirstSite();
-                                    }}
-                                />
-                                <button className="primary-btn" onClick={handleAddFirstSite}>{t.addFirstSite}</button>
+                        <div className={`shortcut-practice-card ${practiceComplete ? 'is-complete' : ''}`}>
+                            <strong>{t.practiceTitle}</strong>
+                            <textarea
+                                className="shortcut-practice-text"
+                                ref={practiceTextRef}
+                                value={t.practiceText}
+                                aria-label={t.practiceTitle}
+                                rows="2"
+                                readOnly
+                            />
+                            <small>{format(t.practiceInstruction, { shortcut: shortcutLabel })}</small>
+                            <div
+                                className={`shortcut-practice-status ${practiceStatus.type || 'info'}`}
+                                role="status"
+                                aria-live="polite"
+                            >
+                                {practiceStatus.message || t.practiceWaiting}
                             </div>
-                            {firstSites.length > 0 && (
-                                <div className="site-list onboarding-site-list">
-                                    {firstSites.map((site) => (
-                                        <div className="site-row" key={site.hostname}>
-                                            <span><span className="site-dot"></span>{site.hostname}</span>
-                                            <button onClick={() => handleRemoveFirstSite(site)}>{t.remove}</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {firstSiteStatus.message && (
-                                <div className={`status ${firstSiteStatus.type}`}>{firstSiteStatus.message}</div>
-                            )}
                         </div>
                         <div className="settings-onboarding-actions">
                             <button className="settings-onboarding-secondary" onClick={() => setStep(2)}>
                                 {t.back}
                             </button>
-                            <button className="settings-onboarding-primary" onClick={() => setStep(4)}>
+                            <button
+                                className="settings-onboarding-primary practice-continue"
+                                onClick={() => setStep(4)}
+                                disabled={!practiceComplete}
+                            >
                                 {t.activationContinue}
                             </button>
                         </div>
@@ -904,8 +927,6 @@ function SettingsPage() {
             <SetupOnboarding
                 lang={lang}
                 initialSpeed={speed}
-                initialEnabledSites={enabledSites}
-                onEnabledSitesChange={setEnabledSites}
                 onComplete={(nextSpeed) => {
                     setSpeed(nextSpeed);
                     setAiMode('builtIn');

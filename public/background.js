@@ -115,6 +115,7 @@ function siteIsEnabled(url, enabledSites) {
 }
 
 const ENABLED_SITES_SCRIPT_ID = 'explain-this-enabled-sites';
+const ALL_SITE_ORIGINS = ['https://*/*', 'http://*/*'];
 
 function getSiteOrigins(site) {
   if (Array.isArray(site?.origins) && site.origins.length) return site.origins;
@@ -151,7 +152,11 @@ async function syncEnabledSiteScripts() {
   }
 
   const tabs = await queryTabs();
-  const matchingTabs = tabs.filter((tab) => tab?.id && siteIsEnabled(tab.url, enabledSites));
+  const matchingTabs = tabs.filter((tab) => (
+    tab?.id
+    && isSupportedPage(tab.url)
+    && siteIsEnabled(tab.url, enabledSites)
+  ));
   const results = await Promise.all(matchingTabs.map((tab) => ensureContentScript(tab)));
   return results.filter(Boolean).length;
 }
@@ -173,7 +178,11 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
     if (Object.keys(defaults).length) chrome.storage.local.set(defaults);
   });
-  syncEnabledSiteScripts().catch(() => {});
+  chrome.storage.local.remove(['allSitesEnabled']);
+  chrome.permissions.remove({ origins: ALL_SITE_ORIGINS }, () => {
+    void chrome.runtime.lastError;
+    syncEnabledSiteScripts().catch(() => {});
+  });
 
   if (details.reason === 'install') {
     chrome.action.setBadgeBackgroundColor({ color: '#1769c2' });
@@ -226,16 +235,20 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status !== 'complete' || !isSupportedPage(tab.url)) return;
-  chrome.storage.local.get(['enabledSites'], (result) => {
-    const enabledSites = Array.isArray(result.enabledSites) ? result.enabledSites : [];
-    if (!siteIsEnabled(tab.url, enabledSites)) return;
-    ensureContentScript({ id: tabId, url: tab.url });
-  });
+  // This succeeds for permanently enabled sites and for same-origin navigations
+  // after activeTab was granted by the shortcut or extension action.
+  ensureContentScript({ id: tabId, url: tab.url });
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== 'explain-selection') return;
   const tab = await queryActiveTab();
+  if (tab?.url?.startsWith(chrome.runtime.getURL('settings.html'))) {
+    chrome.runtime.sendMessage({ action: 'practiceShortcut' }, () => {
+      void chrome.runtime.lastError;
+    });
+    return;
+  }
   if (!await ensureContentScript(tab)) return;
 
   chrome.tabs.sendMessage(tab.id, { action: 'getSelectedText' }, (response) => {

@@ -742,62 +742,114 @@ html {
             font-size: 14px;
         }
 
-        .activation-note {
+        .shortcut-activation-card {
             display: grid;
-            grid-template-columns: 38px 1fr;
-            gap: 11px;
+            grid-template-columns: auto 1fr;
+            gap: 18px;
             align-items: center;
-            padding: 12px 14px;
+            padding: 16px;
             border: 1px solid #d8e5fa;
-            border-radius: 14px;
+            border-radius: 16px;
             background: #f1f6ff;
         }
 
-        .activation-note > span {
-            width: 34px;
-            height: 34px;
-            display: grid;
-            place-items: center;
-            border-radius: 10px;
-            background: #dfeaff;
-            color: #3563d9;
-            font-weight: 800;
+        .shortcut-key-combo {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #6d7b91;
         }
 
-        .activation-note strong,
-        .first-sites-block > strong {
+        .shortcut-key-combo kbd {
+            min-width: 52px;
+            padding: 12px 14px;
+            border: 1px solid #b9cae4;
+            border-bottom-width: 4px;
+            border-radius: 11px;
+            background: #ffffff;
+            color: #245ea8;
+            font: 800 19px/1 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            text-align: center;
+            box-shadow: 0 5px 14px rgba(41, 87, 147, 0.12);
+        }
+
+        .shortcut-activation-card strong,
+        .shortcut-practice-card > strong {
             display: block;
             color: #2f405c;
             font-size: 13px;
         }
 
-        .activation-note p,
-        .first-sites-block > p {
+        .shortcut-activation-card p {
             margin: 3px 0 0;
             color: #68758a;
-            font-size: 11px;
-            line-height: 1.45;
+            font-size: 12px;
+            line-height: 1.55;
         }
 
-        .first-sites-block {
-            padding: 13px 14px;
+        .shortcut-practice-card {
+            padding: 16px;
             border: 1px solid #e2e7ef;
-            border-radius: 14px;
+            border-radius: 16px;
             background: rgba(250, 252, 255, 0.88);
+            transition: border-color 180ms ease, background-color 180ms ease;
         }
 
-        .onboarding-site-add {
-            margin: 11px 0 0;
+        .shortcut-practice-card.is-complete {
+            border-color: #8bd1b2;
+            background: #f0fbf6;
         }
 
-        .onboarding-site-list {
-            max-height: 90px;
-            margin-top: 8px;
-            overflow-y: auto;
+        .shortcut-practice-text {
+            width: 100%;
+            margin: 10px 0 8px;
+            padding: 15px 16px;
+            box-sizing: border-box;
+            border: 1px dashed #9eb9df;
+            border-radius: 12px;
+            background: #ffffff;
+            color: #243751;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.5;
+            cursor: text;
+            resize: none;
+            user-select: text;
         }
 
-        .first-sites-block .status {
-            margin-top: 8px;
+        .shortcut-practice-card small {
+            color: #6f7e93;
+            font-size: 11px;
+        }
+
+        .shortcut-practice-status {
+            margin-top: 10px;
+            padding: 9px 11px;
+            border-radius: 10px;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .shortcut-practice-status.info {
+            background: #edf4ff;
+            color: #41658d;
+        }
+
+        .shortcut-practice-status.error {
+            background: #fff0ef;
+            color: #a43c35;
+        }
+
+        .shortcut-practice-status.success {
+            background: #e5f7ee;
+            color: #217157;
+        }
+
+        .settings-onboarding-primary.practice-continue:disabled {
+            cursor: not-allowed;
+            filter: saturate(0.25);
+            opacity: 0.5;
         }
 
         .settings-onboarding-key {
@@ -915,6 +967,14 @@ html {
 
             .settings-onboarding-actions.key-actions {
                 grid-template-columns: 1fr;
+            }
+
+            .shortcut-activation-card {
+                grid-template-columns: 1fr;
+            }
+
+            .shortcut-key-combo {
+                justify-content: center;
             }
 
             .top-bar,
@@ -1174,27 +1234,54 @@ html {
     }
 
     .settings-data-route span,
-    .activation-note,
-    .first-sites-block {
+    .shortcut-activation-card,
+    .shortcut-practice-card {
         border-color: #3a4358;
         background: #293248;
         color: #dfe7f4;
     }
 
     .settings-data-route span,
-    .activation-note strong,
-    .first-sites-block > strong {
+    .shortcut-activation-card strong,
+    .shortcut-practice-card > strong {
         color: #dfe7f4;
     }
 
-    .activation-note p,
-    .first-sites-block > p {
+    .shortcut-activation-card p,
+    .shortcut-practice-card small {
         color: #a6b0c6;
     }
 
-    .activation-note > span {
-        background: #344563;
-        color: #b8dcff;
+    .shortcut-key-combo {
+        color: #8491a8;
+    }
+
+    .shortcut-key-combo kbd,
+    .shortcut-practice-text {
+        border-color: #536582;
+        background: #1f2738;
+        color: #d6e7ff;
+        box-shadow: none;
+    }
+
+    .shortcut-practice-card.is-complete {
+        border-color: #3b8068;
+        background: #213a35;
+    }
+
+    .shortcut-practice-status.info {
+        background: #263c59;
+        color: #b8d6ff;
+    }
+
+    .shortcut-practice-status.error {
+        background: #4a2729;
+        color: #f0aaa5;
+    }
+
+    .shortcut-practice-status.success {
+        background: #214638;
+        color: #a9dfcb;
     }
 
     .settings-own-key-link {
