@@ -28,6 +28,21 @@ const removeStorage = (keys) => new Promise((resolve) => {
     chrome.storage.local.remove(keys, resolve);
 });
 
+const getExplainSelectionShortcut = (fallbackShortcut) => new Promise((resolve) => {
+    if (typeof chrome === 'undefined' || !chrome?.commands?.getAll) {
+        resolve(fallbackShortcut);
+        return;
+    }
+    chrome.commands.getAll((commands) => {
+        if (chrome.runtime.lastError) {
+            resolve('');
+            return;
+        }
+        const command = commands.find((item) => item.name === 'explain-selection');
+        resolve(String(command?.shortcut || '').trim());
+    });
+});
+
 const providers = [
     {
         id: 'openai',
@@ -137,6 +152,12 @@ const copy = {
         practiceWaiting: '完成一次练习后才能继续。',
         practiceSelectFirst: '快捷键收到了，但还没有选中示例文字。请先选中文字再试一次。',
         practiceSuccess: '练习成功！你已经掌握了第一次激活方法。',
+        shortcutChecking: '正在检查 Chrome 的快捷键分配…',
+        shortcutUnavailableTitle: '快捷键尚未分配给当前扩展',
+        shortcutUnavailableBody: '{shortcut} 可能被旧版 Explain This 或其他扩展占用。Chrome 不会把按键事件交给当前版本，所以这里不会有反应。',
+        openExtensionManager: '管理已安装扩展',
+        openShortcutSettings: '打开 Chrome 快捷键设置',
+        shortcutSettingsHint: '如果安装了多个 Explain This，请先删除旧版；然后将当前版本的“Explain highlighted text”设置为 {shortcut}，再回到此页。',
         activationContinue: '完成练习，继续',
         readyTitle: '准备好了',
         readyBody: '每天 50 次免费解释，无需 API Key。进入新网站后，先选中文字并按一次快捷键；网站激活后，继续划词就会看到 Explain this。',
@@ -223,6 +244,12 @@ const copy = {
         practiceWaiting: 'Complete one practice attempt to continue.',
         practiceSelectFirst: 'The shortcut worked, but the sample text was not selected. Select it and try again.',
         practiceSuccess: 'Practice complete! You now know how to activate a website for the first time.',
+        shortcutChecking: 'Checking the shortcut assigned by Chrome…',
+        shortcutUnavailableTitle: 'The shortcut is not assigned to this extension',
+        shortcutUnavailableBody: '{shortcut} may be held by an older Explain This installation or another extension. Chrome will not deliver the keystroke to this version.',
+        openExtensionManager: 'Manage installed extensions',
+        openShortcutSettings: 'Open Chrome shortcut settings',
+        shortcutSettingsHint: 'If multiple Explain This copies are installed, remove the older ones first. Then assign “Explain highlighted text” to {shortcut} and return here.',
         activationContinue: 'Finish practice and continue',
         readyTitle: 'You’re ready',
         readyBody: 'Get 50 free explanations every day with no API key. On a new website, select text and press the shortcut once. After activation, keep highlighting to reveal Explain this.',
@@ -442,10 +469,39 @@ function SetupOnboarding({
     const overallStep = step + 1;
     const isMac = typeof navigator !== 'undefined'
         && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgentData?.platform || navigator.platform);
-    const shortcutLabel = isMac ? '⌘ E' : 'Ctrl + E';
+    const defaultShortcutLabel = isMac ? '⌘E' : 'Ctrl+E';
+    const [assignedShortcut, setAssignedShortcut] = useState(null);
+    const shortcutReady = Boolean(assignedShortcut);
+    const shortcutLabel = assignedShortcut || defaultShortcutLabel;
+    const shortcutParts = shortcutLabel
+        .replace(/Command/gi, '⌘')
+        .replace(/\s+/g, '')
+        .split('+')
+        .filter(Boolean);
 
     useEffect(() => {
-        if (step !== 3) return undefined;
+        let active = true;
+        const refreshShortcut = () => {
+            getExplainSelectionShortcut(defaultShortcutLabel).then((shortcut) => {
+                if (active) setAssignedShortcut(shortcut);
+            });
+        };
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') refreshShortcut();
+        };
+
+        refreshShortcut();
+        window.addEventListener('focus', refreshShortcut);
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => {
+            active = false;
+            window.removeEventListener('focus', refreshShortcut);
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
+    }, [defaultShortcutLabel]);
+
+    useEffect(() => {
+        if (step !== 3 || !shortcutReady) return undefined;
 
         const handlePracticeAttempt = () => {
             const practiceField = practiceTextRef.current;
@@ -496,7 +552,15 @@ function SetupOnboarding({
                 chrome.runtime.onMessage.removeListener(handleShortcutMessage);
             }
         };
-    }, [step, lang]);
+    }, [step, lang, shortcutReady]);
+
+    const openChromePage = (url) => {
+        if (typeof chrome !== 'undefined' && chrome?.tabs?.create) {
+            chrome.tabs.create({ url });
+            return;
+        }
+        window.open(url, '_blank');
+    };
 
     const completeOnboarding = async (openAdvanced = false) => {
         await setStorage({
@@ -608,11 +672,14 @@ function SetupOnboarding({
                             <h1>{t.activationTitle}</h1>
                             <p className="settings-onboarding-intro">{t.activationBody}</p>
                         </div>
-                        <div className="shortcut-activation-card">
+                        <div className={`shortcut-activation-card ${assignedShortcut === '' ? 'has-conflict' : ''}`}>
                             <div className="shortcut-key-combo" aria-label={shortcutLabel}>
-                                <kbd>{isMac ? '⌘' : 'Ctrl'}</kbd>
-                                <span aria-hidden="true">+</span>
-                                <kbd>E</kbd>
+                                {shortcutParts.map((part, index) => (
+                                    <span className="shortcut-key-part" key={`${part}-${index}`}>
+                                        {index > 0 && <span aria-hidden="true">+</span>}
+                                        <kbd>{part}</kbd>
+                                    </span>
+                                ))}
                             </div>
                             <div>
                                 <strong>{t.shortcutMethodTitle}</strong>
@@ -621,22 +688,46 @@ function SetupOnboarding({
                         </div>
                         <div className={`shortcut-practice-card ${practiceComplete ? 'is-complete' : ''}`}>
                             <strong>{t.practiceTitle}</strong>
-                            <textarea
-                                className="shortcut-practice-text"
-                                ref={practiceTextRef}
-                                value={t.practiceText}
-                                aria-label={t.practiceTitle}
-                                rows="2"
-                                readOnly
-                            />
-                            <small>{format(t.practiceInstruction, { shortcut: shortcutLabel })}</small>
-                            <div
-                                className={`shortcut-practice-status ${practiceStatus.type || 'info'}`}
-                                role="status"
-                                aria-live="polite"
-                            >
-                                {practiceStatus.message || t.practiceWaiting}
-                            </div>
+                            {assignedShortcut === null && (
+                                <div className="shortcut-practice-status info">{t.shortcutChecking}</div>
+                            )}
+                            {assignedShortcut === '' && (
+                                <div className="shortcut-conflict-panel">
+                                    <strong>{t.shortcutUnavailableTitle}</strong>
+                                    <p>{format(t.shortcutUnavailableBody, { shortcut: defaultShortcutLabel })}</p>
+                                    <div className="shortcut-conflict-actions">
+                                        <button type="button" onClick={() => openChromePage('chrome://extensions/')}>
+                                            {t.openExtensionManager}
+                                        </button>
+                                        <button type="button" onClick={() => openChromePage('chrome://extensions/shortcuts')}>
+                                            {t.openShortcutSettings}
+                                        </button>
+                                    </div>
+                                    <small>
+                                        {format(t.shortcutSettingsHint, { shortcut: defaultShortcutLabel })}
+                                    </small>
+                                </div>
+                            )}
+                            {shortcutReady && (
+                                <>
+                                    <textarea
+                                        className="shortcut-practice-text"
+                                        ref={practiceTextRef}
+                                        value={t.practiceText}
+                                        aria-label={t.practiceTitle}
+                                        rows="2"
+                                        readOnly
+                                    />
+                                    <small>{format(t.practiceInstruction, { shortcut: shortcutLabel })}</small>
+                                    <div
+                                        className={`shortcut-practice-status ${practiceStatus.type || 'info'}`}
+                                        role="status"
+                                        aria-live="polite"
+                                    >
+                                        {practiceStatus.message || t.practiceWaiting}
+                                    </div>
+                                </>
+                            )}
                         </div>
                         <div className="settings-onboarding-actions">
                             <button className="settings-onboarding-secondary" onClick={() => setStep(2)}>

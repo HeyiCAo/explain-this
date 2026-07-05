@@ -760,6 +760,12 @@ html {
             color: #6d7b91;
         }
 
+        .shortcut-key-part {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
         .shortcut-key-combo kbd {
             min-width: 52px;
             padding: 12px 14px;
@@ -844,6 +850,49 @@ html {
         .shortcut-practice-status.success {
             background: #e5f7ee;
             color: #217157;
+        }
+
+        .shortcut-activation-card.has-conflict {
+            border-color: #efc47f;
+            background: #fff8ea;
+        }
+
+        .shortcut-conflict-panel {
+            display: grid;
+            gap: 9px;
+            margin-top: 10px;
+            padding: 14px;
+            border: 1px solid #efc47f;
+            border-radius: 12px;
+            background: #fff8ea;
+        }
+
+        .shortcut-conflict-panel strong {
+            color: #87550f;
+            font-size: 13px;
+        }
+
+        .shortcut-conflict-panel p,
+        .shortcut-conflict-panel small {
+            margin: 0;
+            color: #755c37;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .shortcut-conflict-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .shortcut-conflict-actions button {
+            min-height: 40px;
+            border: 0;
+            border-radius: 10px;
+            background: #b26a08;
+            color: #ffffff;
+            font-weight: 750;
         }
 
         .settings-onboarding-primary.practice-continue:disabled {
@@ -975,6 +1024,10 @@ html {
 
             .shortcut-key-combo {
                 justify-content: center;
+            }
+
+            .shortcut-conflict-actions {
+                grid-template-columns: 1fr;
             }
 
             .top-bar,
@@ -1282,6 +1335,26 @@ html {
     .shortcut-practice-status.success {
         background: #214638;
         color: #a9dfcb;
+    }
+
+    .shortcut-activation-card.has-conflict,
+    .shortcut-conflict-panel {
+        border-color: #785b2d;
+        background: #3d3323;
+    }
+
+    .shortcut-conflict-panel strong {
+        color: #ffd28b;
+    }
+
+    .shortcut-conflict-panel p,
+    .shortcut-conflict-panel small {
+        color: #d8c29e;
+    }
+
+    .shortcut-conflict-actions button {
+        background: #ad690f;
+        color: #ffffff;
     }
 
     .settings-own-key-link {
