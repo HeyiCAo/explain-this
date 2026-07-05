@@ -22,29 +22,80 @@
     }
 
     init() {
-      document.addEventListener('mouseup', this.handleTextSelection);
-      document.addEventListener('mousedown', this.handleDocumentPointer);
+      // Capture-phase listeners still run on apps such as Gemini that stop
+      // pointer events inside their own interactive surface.
+      document.addEventListener('pointerup', this.handleTextSelection, true);
+      document.addEventListener('keyup', this.handleTextSelection, true);
+      document.addEventListener('pointerdown', this.handleDocumentPointer, true);
     }
 
     handleDocumentPointer(event) {
-      if (this.floatingButton && !this.floatingButton.contains(event.target)) {
+      if (this.floatingButton && !event.composedPath().includes(this.floatingButton)) {
         this.removeFloatingButton();
       }
     }
 
     handleTextSelection(event) {
-      if (this.floatingButton?.contains(event.target)) return;
-      const selection = window.getSelection();
-      const text = selection?.toString().trim() || '';
+      if (this.floatingButton && event.composedPath().includes(this.floatingButton)) return;
+      if (event.type === 'keyup' && !event.shiftKey) return;
+
+      const { text, rect } = this.getSelectionDetails();
       if (text.length < 2 || text.length > 5000) {
         this.removeFloatingButton();
         return;
       }
       this.selectedText = text;
-      this.showFloatingButton(event);
+      this.showFloatingButton(event, rect);
     }
 
-    showFloatingButton(event) {
+    getSelectionDetails() {
+      const activeElement = document.activeElement;
+      if (
+        activeElement
+        && ['INPUT', 'TEXTAREA'].includes(activeElement.tagName)
+        && Number.isInteger(activeElement.selectionStart)
+        && Number.isInteger(activeElement.selectionEnd)
+      ) {
+        return {
+          text: activeElement.value
+            .slice(activeElement.selectionStart, activeElement.selectionEnd)
+            .trim(),
+          rect: activeElement.getBoundingClientRect(),
+        };
+      }
+
+      const selection = window.getSelection();
+      const text = selection?.toString().trim() || '';
+      let rect = null;
+      if (text && selection?.rangeCount) {
+        const rangeRect = selection.getRangeAt(0).getBoundingClientRect();
+        if (rangeRect.width || rangeRect.height) rect = rangeRect;
+      }
+      return { text, rect };
+    }
+
+    createFloatingContent(buttonLabel, shortcutLabel, iconUrl) {
+      const surface = document.createElement('span');
+      surface.className = 'explain-this-floating-surface';
+
+      const icon = document.createElement('img');
+      icon.className = 'explain-this-floating-icon';
+      icon.src = iconUrl;
+      icon.alt = '';
+
+      const label = document.createElement('span');
+      label.className = 'explain-this-floating-label';
+      label.textContent = buttonLabel;
+
+      const shortcut = document.createElement('span');
+      shortcut.className = 'explain-this-shortcut';
+      shortcut.textContent = shortcutLabel;
+
+      surface.append(icon, label, shortcut);
+      return surface;
+    }
+
+    showFloatingButton(event, selectionRect) {
       this.removeFloatingButton(true);
       const shortcutLabel = /Mac|iPhone|iPad|iPod/i.test(navigator.platform)
         ? '⌘ E'
@@ -56,20 +107,18 @@
       this.floatingButton.type = 'button';
       this.floatingButton.className = 'explain-this-floating-btn';
       this.floatingButton.setAttribute('aria-label', buttonLabel);
-      this.floatingButton.innerHTML = `
-        <span class="explain-this-floating-surface">
-          <img class="explain-this-floating-icon" src="${iconUrl}" alt="">
-          <span class="explain-this-floating-label">${buttonLabel}</span>
-          <span class="explain-this-shortcut">${shortcutLabel}</span>
-        </span>
-      `;
+      this.floatingButton.append(
+        this.createFloatingContent(buttonLabel, shortcutLabel, iconUrl),
+      );
 
       const estimatedWidth = 176;
+      const anchorX = selectionRect?.right || event.clientX || 10;
+      const anchorY = selectionRect?.top || event.clientY || 64;
       const left = Math.min(
-        Math.max(10, event.clientX + 12),
+        Math.max(10, anchorX + 12),
         Math.max(10, window.innerWidth - estimatedWidth - 10),
       );
-      const top = Math.max(10, event.clientY - 54);
+      const top = Math.max(10, anchorY - 54);
       this.floatingButton.style.setProperty('--explain-this-left', `${left}px`);
       this.floatingButton.style.setProperty('--explain-this-top', `${top}px`);
 

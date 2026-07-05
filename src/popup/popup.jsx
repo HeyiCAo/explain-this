@@ -34,6 +34,8 @@ const popupZh = {
   thinking: '思考中...',
   history_title: '最近记录',
   clear_history: '清空',
+  more_history: '更多',
+  less_history: '收起',
   empty_input: '请输入要解释的内容',
   retry: '重试',
   built_in: '内置 AI',
@@ -57,6 +59,8 @@ const popupEn = {
   thinking: 'Thinking...',
   history_title: 'Recent',
   clear_history: 'Clear',
+  more_history: 'More',
+  less_history: 'Show less',
   empty_input: 'Please enter text to explain',
   retry: 'Try Again',
   built_in: 'Built-in AI',
@@ -269,6 +273,7 @@ function Popup() {
   const [loading, setLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [historyList, setHistoryList] = useState([]);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [onboardingRequired, setOnboardingRequired] = useState(null);
   const [pendingSelection, setPendingSelection] = useState(null);
@@ -585,18 +590,33 @@ function Popup() {
         <div className="history-panel">
           <div className="history-header">
             <h3 className="history-title">{t.history_title}</h3>
-            <button className="clear-history-btn" onClick={() => { setHistoryList([]); setStorage({ history: [] }); }}>
+            <button className="clear-history-btn" onClick={() => {
+              setHistoryList([]);
+              setShowAllHistory(false);
+              setStorage({ history: [] });
+            }}>
               {t.clear_history}
             </button>
           </div>
-          {historyList.slice(0, 5).map((item, i) => (
-            <HistoryItem key={i} item={item} onClick={() => {
+          {(showAllHistory ? historyList : historyList.slice(0, 5)).map((item, i) => (
+            <HistoryItem key={`${item.key || item.text}-${i}`} item={item} onClick={() => {
               setInputText(item.text);
               setLanguage(item.language || 'zh');
               setSpeed(item.speed || 'fast');
               explainText(item.text, item.language || 'zh', item.speed || 'fast');
             }} />
           ))}
+          {historyList.length > 5 && (
+            <button
+              type="button"
+              className="history-more-btn"
+              aria-expanded={showAllHistory}
+              onClick={() => setShowAllHistory((current) => !current)}
+            >
+              {showAllHistory ? t.less_history : `${t.more_history} (${historyList.length - 5})`}
+              <span aria-hidden="true">{showAllHistory ? '↑' : '↓'}</span>
+            </button>
+          )}
         </div>
       )}
     </div>

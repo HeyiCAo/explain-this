@@ -156,7 +156,7 @@ async function syncEnabledSiteScripts() {
   return results.filter(Boolean).length;
 }
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
   chrome.storage.local.get([
     'aiMode',
     'apiKey',
@@ -174,6 +174,20 @@ chrome.runtime.onInstalled.addListener(() => {
     if (Object.keys(defaults).length) chrome.storage.local.set(defaults);
   });
   syncEnabledSiteScripts().catch(() => {});
+
+  if (details.reason === 'install') {
+    chrome.action.setBadgeBackgroundColor({ color: '#1769c2' });
+    chrome.action.setBadgeText({ text: '1' });
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('popup.html?welcome=1'),
+      active: true,
+    });
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || changes.onboardingComplete?.newValue !== true) return;
+  chrome.action.setBadgeText({ text: '' });
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

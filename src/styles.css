@@ -17,6 +17,31 @@ body {
     color: #333;
 }
 
+@media (min-width: 700px) {
+    html {
+        min-height: 100%;
+        overflow: auto;
+        border-radius: 0;
+    }
+
+    body {
+        width: 100%;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+            radial-gradient(circle at 18% 15%, rgba(77, 163, 255, 0.16), transparent 32%),
+            linear-gradient(135deg, #eef4fb 0%, #ffffff 55%, #edf5ff 100%);
+    }
+
+    .welcome-container {
+        min-height: 540px;
+        border: 1px solid rgba(56, 105, 173, 0.14);
+        border-radius: 22px;
+        box-shadow: 0 24px 70px rgba(32, 72, 126, 0.18);
+    }
+}
+
 .container {
     padding: 20px;
     height: 100%;
@@ -1290,6 +1315,30 @@ button:active {
     color: #8a93a8;
 }
 
+.history-more-btn {
+    width: 100%;
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 2px;
+    border: 1px solid #dce7f6;
+    border-radius: 10px;
+    background: #f5f8fd;
+    color: #3563a9;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.history-more-btn:hover {
+    border-color: #bfd2ec;
+    background: #edf4fd;
+    transform: none;
+}
+
 @media (prefers-color-scheme: dark) {
     .welcome-container {
         background:
@@ -1403,9 +1452,13 @@ button:active {
         border-color: #3a4460;
     }
     .result-close-btn,
-    .clear-history-btn {
+    .clear-history-btn,
+    .history-more-btn {
         background: #30384f;
         color: #e6ebf5;
+    }
+    .history-more-btn {
+        border-color: #46536c;
     }
     .action-bar .lang-toggle {
         background: #30384f;
