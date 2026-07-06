@@ -1,3 +1,5 @@
+import { getStorage, setStorage } from './storage';
+
 const USAGE_KEY = 'usageStats';
 const DEFAULT_QUOTA_TOKENS = 1000000;
 const DAILY_HISTORY_DAYS = 30;
@@ -96,25 +98,13 @@ export function normalizeUsageStats(stats = {}) {
 }
 
 export function getUsageStats() {
-  return new Promise((resolve) => {
-    if (typeof chrome === 'undefined' || !chrome?.storage?.local) {
-      resolve(emptyUsageStats());
-      return;
-    }
-    chrome.storage.local.get([USAGE_KEY], (result) => {
-      resolve(normalizeUsageStats(result[USAGE_KEY]));
-    });
-  });
+  return getStorage([USAGE_KEY]).then((result) => (
+    normalizeUsageStats(result[USAGE_KEY])
+  ));
 }
 
 export function setUsageStats(stats) {
-  return new Promise((resolve) => {
-    if (typeof chrome === 'undefined' || !chrome?.storage?.local) {
-      resolve();
-      return;
-    }
-    chrome.storage.local.set({ [USAGE_KEY]: normalizeUsageStats(stats) }, resolve);
-  });
+  return setStorage({ [USAGE_KEY]: normalizeUsageStats(stats) });
 }
 
 export async function recordUsage({ inputText, outputText }) {

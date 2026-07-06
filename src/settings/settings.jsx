@@ -1,32 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import '../settingStyle.css'
+import { getStorage, removeStorage, setStorage } from '../shared/storage'
 import { getLastSevenDays, getUsageStats, normalizeUsageStats } from '../shared/usageStats'
-
-const hasExtensionStorage = () => typeof chrome !== 'undefined' && chrome?.storage?.local;
-
-const getStorage = (keys) => new Promise((resolve) => {
-    if (!hasExtensionStorage()) {
-        resolve({});
-        return;
-    }
-    chrome.storage.local.get(keys, resolve);
-});
-
-const setStorage = (values) => new Promise((resolve) => {
-    if (!hasExtensionStorage()) {
-        resolve();
-        return;
-    }
-    chrome.storage.local.set(values, resolve);
-});
-
-const removeStorage = (keys) => new Promise((resolve) => {
-    if (!hasExtensionStorage()) {
-        resolve();
-        return;
-    }
-    chrome.storage.local.remove(keys, resolve);
-});
 
 const getExplainSelectionShortcut = (fallbackShortcut) => new Promise((resolve) => {
     if (typeof chrome === 'undefined' || !chrome?.commands?.getAll) {

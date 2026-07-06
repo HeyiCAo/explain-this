@@ -1,3 +1,5 @@
+import { getStorage, setStorage } from './storage';
+
 const BUILT_IN_API_BASE_URL = (
   import.meta.env.VITE_BUILT_IN_API_BASE_URL
     || 'https://explain-this-api.explainthis-hc907.workers.dev/v1'
@@ -37,23 +39,11 @@ class AIService {
   }
 
   getStorage(keys) {
-    return new Promise((resolve) => {
-      if (typeof chrome === 'undefined' || !chrome?.storage?.local) {
-        resolve({});
-        return;
-      }
-      chrome.storage.local.get(keys, resolve);
-    });
+    return getStorage(keys);
   }
 
   setStorage(values) {
-    return new Promise((resolve) => {
-      if (typeof chrome === 'undefined' || !chrome?.storage?.local) {
-        resolve();
-        return;
-      }
-      chrome.storage.local.set(values, resolve);
-    });
+    return setStorage(values);
   }
 
   async loadConfiguration() {

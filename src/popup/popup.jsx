@@ -3,101 +3,12 @@ import '../styles.css';
 import '../Stream.css';
 import AIService from '../shared/apiService';
 import { recordUsage } from '../shared/usageStats';
-
-// ========== 工具函数 ==========
-const hasExtensionStorage = () => typeof chrome !== 'undefined' && chrome?.storage?.local;
-const getStorage = (keys) => new Promise(resolve => {
-  if (!hasExtensionStorage()) {
-    resolve({});
-    return;
-  }
-  chrome.storage.local.get(keys, resolve);
-});
-
-const setStorage = (values) => new Promise(resolve => {
-  if (!hasExtensionStorage()) {
-    resolve();
-    return;
-  }
-  chrome.storage.local.set(values, resolve);
-});
-
-// ========== 国际化 ==========
-const popupZh = {
-  app_title: 'Explain This',
-  input_placeholder: "粘贴或输入你不懂的内容...\n例如：'内卷是什么意思？'\n      'Python中的装饰器怎么理解？'\n      '这个历史典故有什么背景？'",
-  ask_ai: '发送',
-  speed_label: '速度',
-  speed_fast: '快',
-  speed_detail: '详',
-  results_title: '结果',
-  thinking: '思考中...',
-  history_title: '最近记录',
-  clear_history: '清空',
-  more_history: '更多',
-  less_history: '收起',
-  empty_input: '请输入要解释的内容',
-  retry: '重试',
-  built_in: '内置 AI',
-  byok: '自带 Key',
-  free_left: '今日剩余 {count} 次',
-  quota_exceeded: '你已用完今天的 50 次免费解释。请明天再来，或在高级设置中添加自己的 API Key。',
-  text_too_long: '免费模式下这段文字太长了。请缩短到 1000 字以内，或使用自己的 API Key。',
-  rate_limited: '请求有点频繁，请稍等片刻再试。',
-  key_required: '请先在高级设置中添加自己的 API Key，或切换回内置 AI。',
-  generic_error: '解释暂时失败，请稍后再试。'
-};
-
-const popupEn = {
-  app_title: 'Explain This',
-  input_placeholder: "Paste or type what you don't understand...",
-  ask_ai: 'Ask',
-  speed_label: 'Speed',
-  speed_fast: 'Fast',
-  speed_detail: 'Detail',
-  results_title: 'Results',
-  thinking: 'Thinking...',
-  history_title: 'Recent',
-  clear_history: 'Clear',
-  more_history: 'More',
-  less_history: 'Show less',
-  empty_input: 'Please enter text to explain',
-  retry: 'Try Again',
-  built_in: 'Built-in AI',
-  byok: 'Your API key',
-  free_left: '{count} free today',
-  quota_exceeded: 'You’ve used today’s 50 free explanations. Come back tomorrow or add your own API key.',
-  text_too_long: 'This selection is too long for the free plan. Try a shorter passage or use your own API key.',
-  rate_limited: 'That was a little too fast. Please wait a moment and try again.',
-  key_required: 'Add your API key in Advanced settings, or switch back to Built-in AI.',
-  generic_error: 'Explanation failed. Please try again in a moment.'
-};
-
-const firstRunZh = {
-  eyebrow: '欢迎使用 Explain This',
-  step: '第 1 步，共 5 步',
-  continue: '继续前往设置',
-  opening: '正在打开设置…',
-  languageTitle: '选择你的使用语言',
-  languageBody: '这会决定界面和 AI 回答的默认语言，之后仍可随时切换。',
-  chinese: '中文',
-  chineseHint: '使用中文界面和回答',
-  english: 'English',
-  englishHint: 'Use the app and AI in English'
-};
-
-const firstRunEn = {
-  eyebrow: 'Welcome to Explain This',
-  step: 'Step 1 of 5',
-  continue: 'Continue to Settings',
-  opening: 'Opening Settings…',
-  languageTitle: 'Choose your language',
-  languageBody: 'This sets the default language for the interface and AI responses. You can change it later.',
-  chinese: '中文',
-  chineseHint: '使用中文界面和回答',
-  english: 'English',
-  englishHint: 'Use the app and AI in English'
-};
+import { firstRunCopy, popupCopy } from '../locales/popup';
+import { getStorage, setStorage } from '../shared/storage';
+import HistoryList from './components/HistoryList';
+import PopupHeader from './components/PopupHeader';
+import ResultPanel from './components/ResultPanel';
+import TextInputPanel from './components/TextInputPanel';
 
 async function openOnboardingSettings() {
   if (typeof chrome !== 'undefined' && chrome?.runtime?.openOptionsPage) {
@@ -160,53 +71,9 @@ function useSimpleCache(enabled) {
   return { getCache, upsertCache };
 }
 
-// ========== 子组件 ==========
-function HistoryItem({ item, onClick }) {
-  return (
-    <div className="history-item" onClick={onClick}>
-      <span className="history-item-text">{item.text}</span>
-      <span className="history-item-meta">
-        {(item.language || 'zh').toUpperCase()} · {item.timestamp}
-      </span>
-    </div>
-  );
-}
-
-function LoadingSpinner({ text }) {
-  return (
-    <div className="loading-container">
-      <div className="spinner"></div>
-      <p className="loading-text">{text}</p>
-    </div>
-  );
-}
-
-function ResultError({ message }) {
-  return (
-    <div className="result-error">
-      {message}
-    </div>
-  );
-}
-
-function ResultSuccess({ html }) {
-  return (
-    <div id="resultContent" className="result-content" dangerouslySetInnerHTML={{ __html: html }} />
-  );
-}
-
-function ResultStreaming({ text }) {
-  return (
-    <div className="stream-container">
-      <div className="stream-content">{text}</div>
-      <span className="stream-cursor">▊</span>
-    </div>
-  );
-}
-
 function LanguageWelcome({ language, onLanguageChange }) {
   const [opening, setOpening] = useState(false);
-  const t = language === 'zh' ? firstRunZh : firstRunEn;
+  const t = firstRunCopy[language];
 
   const handleContinue = async () => {
     setOpening(true);
@@ -285,7 +152,7 @@ function Popup() {
   const processedSelectionIdsRef = useRef(new Set());
   const aiServiceRef = useRef(new AIService());
   const { getCache, upsertCache } = useSimpleCache(saveRecentExplanations);
-  const t = language === 'zh' ? popupZh : popupEn;
+  const t = popupCopy[language];
 
   // 初始化
   useEffect(() => {
@@ -478,6 +345,38 @@ function Popup() {
     explainText(text);
   }, [onboardingRequired, pendingSelection, explainText]);
 
+  const handleOpenSettings = () => {
+    if (typeof chrome !== 'undefined' && chrome?.runtime?.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
+    }
+  };
+
+  const handleLanguageChange = (nextLanguage) => {
+    setLanguage(nextLanguage);
+    setLangMenuOpen(false);
+    setStorage({ lang: nextLanguage });
+  };
+
+  const handleSpeedChange = (nextSpeed) => {
+    setSpeed(nextSpeed);
+    setStorage({ explainSpeed: nextSpeed });
+  };
+
+  const handleClearHistory = () => {
+    setHistoryList([]);
+    setShowAllHistory(false);
+    setStorage({ history: [] });
+  };
+
+  const handleHistorySelect = (item) => {
+    const itemLanguage = item.language || 'zh';
+    const itemSpeed = item.speed || 'fast';
+    setInputText(item.text);
+    setLanguage(itemLanguage);
+    setSpeed(itemSpeed);
+    explainText(item.text, itemLanguage, itemSpeed);
+  };
+
   // ========== 渲染 ==========
   if (onboardingRequired === null) {
     return <div className="popup-initializing" aria-label="Loading"></div>;
@@ -497,128 +396,40 @@ function Popup() {
 
   return (
     <div className="popup-container">
-      {/* 标题栏 */}
-      <div className="popup-header">
-        <div>
-          <h1 className="popup-title">{t.app_title}</h1>
-          <div className="ai-mode-badge">
-            <span>{aiMode === 'builtIn' ? t.built_in : t.byok}</span>
-            {aiMode === 'builtIn' && (
-              <small>{t.free_left.replace('{count}', freeRemaining)}</small>
-            )}
-          </div>
-        </div>
-        <button className="settings-btn" onClick={() => {
-          if (typeof chrome !== 'undefined' && chrome?.runtime?.openOptionsPage) {
-            chrome.runtime.openOptionsPage();
-          }
-        }} aria-label="Settings" title="Settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true" className="settings-icon">
-            <path d="M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Z" />
-            <path d="M19.4 13.5c.1-.5.1-1 .1-1.5s0-1-.1-1.5l2-1.5-2-3.5-2.4 1a8.4 8.4 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A8.4 8.4 0 0 0 7 6.5l-2.4-1-2 3.5 2 1.5c-.1.5-.1 1-.1 1.5s0 1 .1 1.5l-2 1.5 2 3.5 2.4-1a8.4 8.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a8.4 8.4 0 0 0 2.6-1.5l2.4 1 2-3.5-2-1.5Zm-7.4 4a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11Z" />
-          </svg>
-        </button>
-      </div>
-
-      {/* 输入区域 */}
-      <textarea
-        className="input-area"
-        value={inputText}
-        disabled={loading}
-        onChange={e => setInputText(e.target.value)}
-        placeholder={t.input_placeholder}
-        rows={4}
+      <PopupHeader
+        copy={t}
+        aiMode={aiMode}
+        freeRemaining={freeRemaining}
+        onOpenSettings={handleOpenSettings}
       />
-
-      {/* 操作栏 */}
-      <div className="action-bar">
-        <button className="ask-btn" onClick={handleSubmit} disabled={loading}>
-          {loading ? t.thinking : t.ask_ai}
-        </button>
-
-        {/* 语言切换 */}
-        <div ref={langWrapRef} className="lang-wrap">
-          <button className="lang-toggle" onClick={() => setLangMenuOpen(!langMenuOpen)}>
-            {language.toUpperCase()}
-          </button>
-          {langMenuOpen && (
-            <div className="lang-menu open">
-              {['zh', 'en'].map(lang => (
-                <div key={lang}
-                  className={`lang-option ${language === lang ? 'active' : ''}`}
-                  onClick={() => { setLanguage(lang); setLangMenuOpen(false); setStorage({ lang }); }}
-                >{lang.toUpperCase()}</div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 速度切换 */}
-      <div className="speed-bar">
-        <span className="speed-label">{t.speed_label}</span>
-        <div className="speed-toggle-group">
-          {['fast', 'detail'].map(s => (
-            <button key={s}
-              className={`speed-btn ${speed === s ? 'active' : ''}`}
-              onClick={() => { setSpeed(s); setStorage({ explainSpeed: s }); }}
-            >{t['speed_' + s]}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* 结果区域 */}
-      {showResult && (
-        <div className="result-panel">
-          <div className="result-header">
-            <h3 className="result-title">{t.results_title}</h3>
-            <div className="result-header-right">
-              <button className="result-close-btn" onClick={() => setShowResult(false)}>✕</button>
-            </div>
-          </div>
-          <div>
-            {result?.type === 'loading' && <LoadingSpinner text={t.thinking} />}
-            {result?.type === 'streaming' && <ResultStreaming text={result.text || t.thinking} />}
-            {result?.type === 'error' && <ResultError message={result.message} />}
-            {result?.type === 'success' && <ResultSuccess html={result.html} />}
-          </div>
-        </div>
-      )}
-
-      {/* 历史记录 */}
-      {historyList.length > 0 && (
-        <div className="history-panel">
-          <div className="history-header">
-            <h3 className="history-title">{t.history_title}</h3>
-            <button className="clear-history-btn" onClick={() => {
-              setHistoryList([]);
-              setShowAllHistory(false);
-              setStorage({ history: [] });
-            }}>
-              {t.clear_history}
-            </button>
-          </div>
-          {(showAllHistory ? historyList : historyList.slice(0, 5)).map((item, i) => (
-            <HistoryItem key={`${item.key || item.text}-${i}`} item={item} onClick={() => {
-              setInputText(item.text);
-              setLanguage(item.language || 'zh');
-              setSpeed(item.speed || 'fast');
-              explainText(item.text, item.language || 'zh', item.speed || 'fast');
-            }} />
-          ))}
-          {historyList.length > 5 && (
-            <button
-              type="button"
-              className="history-more-btn"
-              aria-expanded={showAllHistory}
-              onClick={() => setShowAllHistory((current) => !current)}
-            >
-              {showAllHistory ? t.less_history : `${t.more_history} (${historyList.length - 5})`}
-              <span aria-hidden="true">{showAllHistory ? '↑' : '↓'}</span>
-            </button>
-          )}
-        </div>
-      )}
+      <TextInputPanel
+        copy={t}
+        inputText={inputText}
+        loading={loading}
+        language={language}
+        speed={speed}
+        langMenuOpen={langMenuOpen}
+        langWrapRef={langWrapRef}
+        onInputChange={(event) => setInputText(event.target.value)}
+        onSubmit={handleSubmit}
+        onToggleLanguageMenu={() => setLangMenuOpen(!langMenuOpen)}
+        onLanguageChange={handleLanguageChange}
+        onSpeedChange={handleSpeedChange}
+      />
+      <ResultPanel
+        copy={t}
+        result={result}
+        visible={showResult}
+        onClose={() => setShowResult(false)}
+      />
+      <HistoryList
+        copy={t}
+        historyList={historyList}
+        showAllHistory={showAllHistory}
+        onClear={handleClearHistory}
+        onSelect={handleHistorySelect}
+        onToggleShowAll={() => setShowAllHistory((current) => !current)}
+      />
     </div>
   );
 }
